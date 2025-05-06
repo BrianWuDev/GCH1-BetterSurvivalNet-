@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCH1 多腫瘤基因網路視覺化</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        .viz-link {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .viz-link:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        code {
+            background-color: #f8f8f8;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+        .legend-diamond {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            background-color: #FF9800;
+            border: 1px solid #E65100;
+            transform: rotate(45deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GCH1 多腫瘤基因網路視覺化</h1>
+        
+        <p>
+            此項目展示了以GCH1為中心節點的多腫瘤基因網路視覺化。網路圖顯示了GCH1與不同腫瘤類型的關係，
+            以及與每種腫瘤相關的基因（基於Pearson相關係數）。特別標記了同時存在於多種腫瘤中的共享基因。
+        </p>
+        
+        <a href="output/multi_tumor_network.html" class="viz-link">查看網路視覺化</a>
+        
+        <h2>腫瘤類型及相關基因</h2>
+        
+        <p>
+            網路圖包含了以下腫瘤類型，並顯示了與GCH1相關係數≥0.5的基因：
+        </p>
+        
+        <table>
+            <tr>
+                <th>腫瘤類型</th>
+                <th>基因數量 (PCC ≥ 0.5)</th>
+                <th>最高相關性基因</th>
+            </tr>
+            <tr>
+                <td>BLCA腫瘤</td>
+                <td>3</td>
+                <td>IRF1, LAP3, IFNG</td>
+            </tr>
+            <tr>
+                <td>CESC腫瘤</td>
+                <td>4</td>
+                <td>CNGA2, UGT2A1, UGT2A1, RP11-401E5.2</td>
+            </tr>
+            <tr>
+                <td>OV腫瘤</td>
+                <td>24</td>
+                <td>多個基因，相關係數≥0.5</td>
+            </tr>
+            <tr>
+                <td>SARC腫瘤</td>
+                <td>100</td>
+                <td>多個基因，相關係數≥0.5</td>
+            </tr>
+            <tr>
+                <td>STAD腫瘤</td>
+                <td>32</td>
+                <td>NEUROD1, INSM1, SEZ6等</td>
+            </tr>
+        </table>
+        
+        <h2>視覺化特點</h2>
+        
+        <ul>
+            <li>互動式網路圖：可拖動節點重新排列</li>
+            <li>懸停顯示詳細資訊：基因名稱、相關係數和腫瘤類型</li>
+            <li>節點大小反映相關性強度</li>
+            <li>連接線寬度反映相關性強度</li>
+            <li>節點聚類和擴展控制按鈕</li>
+            <li>高解析度PNG下載選項</li>
+            <li><strong>跨腫瘤基因顯示</strong>：同時出現在多種腫瘤中的基因以特殊形式顯示</li>
+            <li><strong>位置凍結功能</strong>：可凍結節點位置，防止自動移動</li>
+        </ul>
+        
+        <h2>網路圖節點說明</h2>
+        
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FF4136;"></div>
+            <span><strong>GCH1 中心節點</strong> - 整個網路的中心基因</span>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #3D9970;"></div>
+            <span><strong>腫瘤類型節點</strong> - 不同腫瘤類型，每種有獨特顏色</span>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #3D9970; opacity: 0.7;"></div>
+            <span><strong>腫瘤特異性基因</strong> - 僅在一種腫瘤中出現的基因，顏色對應腫瘤</span>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-diamond"></div>
+            <span><strong>跨腫瘤基因</strong> - 同時出現在多種腫瘤中的基因，以鑽石形狀和橙色顯示</span>
+        </div>
+        
+        <h2>方法說明</h2>
+        
+        <p>
+            此網路圖使用Python和PyVis庫創建，基於由多種腫瘤類型的基因表達數據計算得出的Pearson相關係數。
+            數據處理和視覺化過程包括：
+        </p>
+        
+        <ol>
+            <li>從CSV文件加載每種腫瘤類型的基因表達數據</li>
+            <li>按照相關係數閾值（≥0.5）過濾基因</li>
+            <li>以GCH1為中心創建網路結構</li>
+            <li>將各腫瘤類型作為中間節點連接到GCH1</li>
+            <li>識別腫瘤特異性基因和跨腫瘤基因</li>
+            <li>將腫瘤特異性基因連接到對應的腫瘤節點</li>
+            <li>為跨腫瘤基因創建特殊節點並連接到多個相關腫瘤</li>
+            <li>通過物理模擬來優化節點佈局</li>
+            <li>添加互動控制和下載選項</li>
+        </ol>
+        
+        <h2>使用說明</h2>
+        
+        <p>
+            若要在本地運行此視覺化：
+        </p>
+        
+        <ol>
+            <li>點擊上方的"查看網路視覺化"按鈕</li>
+            <li>使用鼠標拖動節點重新排列網路結構</li>
+            <li>使用滑鼠滾輪放大或縮小視圖</li>
+            <li>懸停在節點上查看詳細資訊</li>
+            <li>使用左下角的按鈕控制節點聚類或擴展</li>
+            <li><strong>凍結節點位置</strong>：
+                <ul>
+                    <li>調整好節點位置後，點擊"Freeze Positions"按鈕</li>
+                    <li>節點將固定在當前位置，不再自動移動</li>
+                    <li>若要恢復自動佈局，點擊"Unfreeze Positions"按鈕</li>
+                </ul>
+            </li>
+            <li>使用右上角的按鈕下載PNG圖像</li>
+        </ol>
+        
+        <h2>代碼資源</h2>
+        
+        <p>
+            生成此視覺化的Python代碼（<code>multi_tumor_network.py</code>）包含在此項目中。
+            可通過以下命令運行代碼生成最新的視覺化：
+        </p>
+        
+        <pre><code>python multi_tumor_network.py</code></pre>
+        
+        <div class="footer">
+            <p>© 2025 GCH1基因網路視覺化項目 | 創建日期：2025年5月3日</p>
+        </div>
+    </div>
+</body>
+</html> 
