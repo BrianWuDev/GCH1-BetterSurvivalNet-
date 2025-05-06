@@ -1,0 +1,1118 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 1000px;
+                 height: 800px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1000px;
+                 height: 800px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    
+        <style>
+            /* Container styles */
+            .network-container {
+                max-width: 1200px;
+                width: 100%;
+                margin: 0 auto;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                border: none !important;
+                background-color: #f9f9f9;
+            }
+            
+            /* Title styles */
+            .header-container {
+                text-align: center;
+                margin-bottom: 20px;
+                width: 100%;
+                border-bottom: none !important;
+                padding-bottom: 0 !important;
+                box-shadow: none !important;
+            }
+            
+            .main-title {
+                color: #333;
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+            
+            .subtitle {
+                color: #666;
+                font-size: 16px;
+            }
+            
+            /* Network styles */
+            #mynetwork {
+                width: 1000px !important;
+                height: 800px !important;
+                margin: 0 auto !important;
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+            }
+            
+            /* Legend styles */
+            .legend-container {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                background-color: white;
+                padding: 15px;
+                border-radius: 5px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                z-index: 1000;
+                max-width: 220px;
+                font-size: 14px;
+            }
+            
+            .legend-title {
+                text-align: center;
+                margin-bottom: 10px;
+                font-weight: bold;
+            }
+            
+            .legend-item {
+                display: flex;
+                align-items: center;
+                margin-bottom: 5px;
+            }
+            
+            .legend-color {
+                width: 15px;
+                height: 15px;
+                border-radius: 50%;
+                margin-right: 10px;
+            }
+            
+            .legend-section {
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            
+            .legend-info {
+                margin-top: 10px;
+                font-size: 12px;
+            }
+            
+            .legend-controls {
+                margin-top: 10px;
+                border-top: 1px solid #eee;
+                padding-top: 10px;
+                font-size: 12px;
+            }
+            
+            .controls-title {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            
+            /* Status indicator */
+            .status-indicator {
+                position: absolute;
+                bottom: 70px;
+                left: 20px;
+                background-color: rgba(255, 255, 255, 0.9);
+                padding: 8px 14px;
+                border-radius: 5px;
+                font-size: 14px;
+                font-weight: bold;
+                z-index: 1000;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                border: 1px solid rgba(0,0,0,0.05);
+                transition: all 0.3s ease;
+            }
+            
+            .status-indicator.frozen {
+                color: #2196F3;
+                border-left: 4px solid #2196F3;
+            }
+            
+            .status-indicator.active {
+                color: #4CAF50;
+                border-left: 4px solid #4CAF50;
+            }
+            
+            .status-indicator.error {
+                color: #F44336;
+                border-left: 4px solid #F44336;
+                background-color: rgba(244, 67, 54, 0.1);
+            }
+            
+            /* Control buttons */
+            .control-buttons {
+                position: absolute;
+                bottom: 20px;
+                left: 20px;
+                z-index: 1000;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .control-buttons button {
+                padding: 8px 12px;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+            
+            #cluster-btn {
+                background-color: #9C27B0;
+            }
+            
+            #expand-btn {
+                background-color: #FF9800;
+            }
+            
+            #reset-btn {
+                background-color: #607D8B;
+            }
+            
+            #freeze-btn {
+                background-color: #2196F3;
+            }
+            
+            #unfreeze-btn {
+                background-color: #4CAF50;
+            }
+            
+            .control-buttons button:hover {
+                filter: brightness(1.1);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                transform: translateY(-2px);
+            }
+            
+            .control-buttons button:active {
+                transform: translateY(1px);
+                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            }
+            
+            /* Download buttons */
+            .download-buttons {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                display: flex;
+            }
+            
+            #download-btn, #download-hires-btn {
+                padding: 8px 12px;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                transition: all 0.2s ease;
+            }
+            
+            #download-btn {
+                background-color: #4CAF50;
+                margin-right: 10px;
+            }
+            
+            #download-hires-btn {
+                background-color: #2196F3;
+            }
+            
+            #download-btn:hover, #download-hires-btn:hover,
+            .control-buttons button:hover {
+                filter: brightness(1.1);
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+        </style>
+        
+        <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+        </head>
+
+
+    <body>
+<div class="network-container">
+
+        <div class="header-container">
+            <h1 class="main-title">Multi-Tumor Network with GCH1 as Central Node</h1>
+            <p class="subtitle">Visualization of GCH1 gene correlations with multiple tumor types and associated genes</p>
+        </div>
+        
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"borderWidth": 2, "color": "#FF4136", "font": {"color": "black"}, "id": "GCH1", "label": "GCH1", "shape": "dot", "size": 25, "title": "GCH1 (Central Gene)"}, {"borderWidth": 2, "color": "#3D9970", "font": {"color": "black"}, "id": "BLCA Tumor", "label": "BLCA Tumor", "shape": "dot", "size": 15, "title": "BLCA Tumor", "x": 300.0, "y": 0.0}, {"borderWidth": 2, "color": "#0074D9", "font": {"color": "black"}, "id": "CESC Tumor", "label": "CESC Tumor", "shape": "dot", "size": 15, "title": "CESC Tumor", "x": 212.13203435596427, "y": 212.13203435596427}, {"borderWidth": 2, "color": "#FFDC00", "font": {"color": "black"}, "id": "LIHC Tumor", "label": "LIHC Tumor", "shape": "dot", "size": 15, "title": "LIHC Tumor", "x": 1.8369701987210297e-14, "y": 300.0}, {"borderWidth": 2, "color": "#FF4081", "font": {"color": "black"}, "id": "OV Tumor", "label": "OV Tumor", "shape": "dot", "size": 15, "title": "OV Tumor", "x": -212.13203435596424, "y": 212.13203435596427}, {"borderWidth": 2, "color": "#01FF70", "font": {"color": "black"}, "id": "PAAD Tumor", "label": "PAAD Tumor", "shape": "dot", "size": 15, "title": "PAAD Tumor", "x": -300.0, "y": 3.6739403974420595e-14}, {"borderWidth": 2, "color": "#B10DC9", "font": {"color": "black"}, "id": "SARC Tumor", "label": "SARC Tumor", "shape": "dot", "size": 15, "title": "SARC Tumor", "x": -212.1320343559643, "y": -212.13203435596424}, {"borderWidth": 2, "color": "#7FDBFF", "font": {"color": "black"}, "id": "SKCM Tumor", "label": "SKCM Tumor", "shape": "dot", "size": 15, "title": "SKCM Tumor", "x": -5.510910596163089e-14, "y": -300.0}, {"borderWidth": 2, "color": "#FF851B", "font": {"color": "black"}, "id": "STAD Tumor", "label": "STAD Tumor", "shape": "dot", "size": 15, "title": "STAD Tumor", "x": 212.1320343559642, "y": -212.1320343559643}, {"borderWidth": 1, "color": {"background": "#0074D9", "border": "#0074D9"}, "font": {"color": "black"}, "id": "CNGA2", "label": "CNGA2", "shape": "dot", "size": 5.5600000000000005, "title": "CNGA2\u003cbr\u003ePCC: 0.540\u003cbr\u003eTumor: CESC Tumor", "x": 262.13203435596427, "y": 212.13203435596427}, {"borderWidth": 1, "color": {"background": "#0074D9", "border": "#0074D9"}, "font": {"color": "black"}, "id": "UGT2A1", "label": "UGT2A1", "shape": "dot", "size": 5.140000000000001, "title": "UGT2A1\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: CESC Tumor", "x": 260.06528277724, "y": 227.70649087246161}, {"borderWidth": 1, "color": {"background": "#0074D9", "border": "#0074D9"}, "font": {"color": "black"}, "id": "RP11-401E5.2", "label": "RP11-401E5.2", "shape": "dot", "size": 5.0, "title": "RP11-401E5.2\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: CESC Tumor", "x": 242.2266392733389, "y": 253.55370446796158}, {"borderWidth": 1, "color": {"background": "#FFDC00", "border": "#FFDC00"}, "font": {"color": "black"}, "id": "LINC00602", "label": "LINC00602", "shape": "dot", "size": 5.42, "title": "LINC00602\u003cbr\u003ePCC: 0.530\u003cbr\u003eTumor: LIHC Tumor", "x": 50.00000000000002, "y": 300.0}, {"borderWidth": 1, "color": {"background": "#FFDC00", "border": "#FFDC00"}, "font": {"color": "black"}, "id": "SLC16A14", "label": "SLC16A14", "shape": "dot", "size": 5.28, "title": "SLC16A14\u003cbr\u003ePCC: 0.520\u003cbr\u003eTumor: LIHC Tumor", "x": 47.933248421275756, "y": 315.5744565164973}, {"borderWidth": 1, "color": {"background": "#FFDC00", "border": "#FFDC00"}, "font": {"color": "black"}, "id": "AKAP12", "label": "AKAP12", "shape": "dot", "size": 5.140000000000001, "title": "AKAP12\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: LIHC Tumor", "x": 41.09806331424735, "y": 329.85949081645765}, {"borderWidth": 1, "color": {"background": "#FFDC00", "border": "#FFDC00"}, "font": {"color": "black"}, "id": "SLC25A15", "label": "SLC25A15", "shape": "dot", "size": 5.0, "title": "SLC25A15\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: LIHC Tumor", "x": 30.094604917374642, "y": 341.4216701119973}, {"borderWidth": 1, "color": {"background": "#FFDC00", "border": "#FFDC00"}, "font": {"color": "black"}, "id": "CCRN4L", "label": "CCRN4L", "shape": "dot", "size": 5.0, "title": "CCRN4L\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: LIHC Tumor", "x": 15.945276909747307, "y": 349.0745162408299}, {"borderWidth": 1, "color": {"background": "#FFDC00", "border": "#FFDC00"}, "font": {"color": "black"}, "id": "SLC7A2", "label": "SLC7A2", "shape": "dot", "size": 5.0, "title": "SLC7A2\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: LIHC Tumor", "x": 2.1553783664993414e-14, "y": 352.0}, {"borderWidth": 1, "color": {"background": "#FFDC00", "border": "#FFDC00"}, "font": {"color": "black"}, "id": "GOT1", "label": "GOT1", "shape": "dot", "size": 5.0, "title": "GOT1\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: LIHC Tumor", "x": -16.19249050524722, "y": 349.835361453866}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "SOCS4", "label": "SOCS4", "shape": "dot", "size": 6.119999999999999, "title": "SOCS4\u003cbr\u003ePCC: 0.580\u003cbr\u003eTumor: OV Tumor", "x": -162.13203435596424, "y": 212.13203435596427}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "ATP6AP2", "label": "ATP6AP2", "shape": "dot", "size": 5.840000000000001, "title": "ATP6AP2\u003cbr\u003ePCC: 0.560\u003cbr\u003eTumor: OV Tumor", "x": -164.1987859346885, "y": 227.70649087246161}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "SGPP1", "label": "SGPP1", "shape": "dot", "size": 5.700000000000001, "title": "SGPP1\u003cbr\u003ePCC: 0.550\u003cbr\u003eTumor: OV Tumor", "x": -171.0339710417169, "y": 241.9915251724219}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "WDHD1", "label": "WDHD1", "shape": "dot", "size": 5.5600000000000005, "title": "WDHD1\u003cbr\u003ePCC: 0.540\u003cbr\u003eTumor: OV Tumor", "x": -182.0374294385896, "y": 253.55370446796158}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "EXOC5", "label": "EXOC5", "shape": "dot", "size": 5.5600000000000005, "title": "EXOC5\u003cbr\u003ePCC: 0.540\u003cbr\u003eTumor: OV Tumor", "x": -196.18675744621694, "y": 261.20655059679416}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "SRP54", "label": "SRP54", "shape": "dot", "size": 5.5600000000000005, "title": "SRP54\u003cbr\u003ePCC: 0.540\u003cbr\u003eTumor: OV Tumor", "x": -212.13203435596424, "y": 264.13203435596427}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "DLGAP5", "label": "DLGAP5", "shape": "dot", "size": 5.42, "title": "DLGAP5\u003cbr\u003ePCC: 0.530\u003cbr\u003eTumor: OV Tumor", "x": -228.32452486121147, "y": 261.9673958098303}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "LRR1", "label": "LRR1", "shape": "dot", "size": 5.42, "title": "LRR1\u003cbr\u003ePCC: 0.530\u003cbr\u003eTumor: OV Tumor", "x": -243.1670956770068, "y": 254.84813165896148}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "CARD8-AS1", "label": "CARD8-AS1", "shape": "dot", "size": 5.140000000000001, "title": "CARD8-AS1\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: OV Tumor", "x": -255.17173845671144, "y": 243.40220977792384}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "PPM1A", "label": "PPM1A", "shape": "dot", "size": 5.140000000000001, "title": "PPM1A\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: OV Tumor", "x": -263.10866362938447, "y": 228.69534525446144}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "GMFB", "label": "GMFB", "shape": "dot", "size": 5.140000000000001, "title": "GMFB\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: OV Tumor", "x": -266.13203435596427, "y": 212.13203435596427}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "WARS", "label": "WARS", "shape": "dot", "size": 5.0, "title": "WARS\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: OV Tumor", "x": -263.8695088424206, "y": 195.32150986196714}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "C9orf91", "label": "C9orf91", "shape": "dot", "size": 5.0, "title": "C9orf91\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: OV Tumor", "x": -256.46616564771136, "y": 179.92140253033674}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "CENPI", "label": "CENPI", "shape": "dot", "size": 5.0, "title": "CENPI\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: OV Tumor", "x": -244.57778028250877, "y": 167.47429626646718}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "AP5M1", "label": "AP5M1", "shape": "dot", "size": 5.0, "title": "AP5M1\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: OV Tumor", "x": -229.31337924321133, "y": 159.25329204995373}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "NIN", "label": "NIN", "shape": "dot", "size": 5.0, "title": "NIN\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: OV Tumor", "x": -212.13203435596424, "y": 156.13203435596427}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "SMC1A", "label": "SMC1A", "shape": "dot", "size": 5.0, "title": "SMC1A\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: OV Tumor", "x": -194.7034758732172, "y": 158.4924468369176}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "PPP2R5E", "label": "PPP2R5E", "shape": "dot", "size": 5.0, "title": "PPP2R5E\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: OV Tumor", "x": -178.74583202575178, "y": 166.17986907546725}, {"borderWidth": 1, "color": {"background": "#FF4081", "border": "#FF4081"}, "font": {"color": "black"}, "id": "ZNF267", "label": "ZNF267", "shape": "dot", "size": 5.0, "title": "ZNF267\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: OV Tumor", "x": -165.85626227771724, "y": 178.51071792483478}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "KCNK16", "label": "KCNK16", "shape": "dot", "size": 10.88, "title": "KCNK16\u003cbr\u003ePCC: 0.920\u003cbr\u003eTumor: PAAD Tumor", "x": -250.0, "y": 3.6739403974420595e-14}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "4-Mar", "label": "4-Mar", "shape": "dot", "size": 10.600000000000001, "title": "4-Mar\u003cbr\u003ePCC: 0.900\u003cbr\u003eTumor: PAAD Tumor", "x": -252.06675157872428, "y": 15.574456516497385}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SLC8A2", "label": "SLC8A2", "shape": "dot", "size": 10.600000000000001, "title": "SLC8A2\u003cbr\u003ePCC: 0.900\u003cbr\u003eTumor: PAAD Tumor", "x": -258.9019366857527, "y": 29.85949081645767}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "LRRTM4", "label": "LRRTM4", "shape": "dot", "size": 10.46, "title": "LRRTM4\u003cbr\u003ePCC: 0.890\u003cbr\u003eTumor: PAAD Tumor", "x": -269.9053950826254, "y": 41.42167011199735}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "NANOS1", "label": "NANOS1", "shape": "dot", "size": 10.46, "title": "NANOS1\u003cbr\u003ePCC: 0.890\u003cbr\u003eTumor: PAAD Tumor", "x": -284.0547230902527, "y": 49.07451624082996}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "MIR7-3HG", "label": "MIR7-3HG", "shape": "dot", "size": 10.46, "title": "MIR7-3HG\u003cbr\u003ePCC: 0.890\u003cbr\u003eTumor: PAAD Tumor", "x": -300.0, "y": 52.000000000000036}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "LINC01014", "label": "LINC01014", "shape": "dot", "size": 10.32, "title": "LINC01014\u003cbr\u003ePCC: 0.880\u003cbr\u003eTumor: PAAD Tumor", "x": -316.19249050524724, "y": 49.835361453866085}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "APBB1", "label": "APBB1", "shape": "dot", "size": 10.32, "title": "APBB1\u003cbr\u003ePCC: 0.880\u003cbr\u003eTumor: PAAD Tumor", "x": -331.0350613210426, "y": 42.716097302997255}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "ERO1LB", "label": "ERO1LB", "shape": "dot", "size": 10.32, "title": "ERO1LB\u003cbr\u003ePCC: 0.880\u003cbr\u003eTumor: PAAD Tumor", "x": -343.0397041007472, "y": 31.270175421959614}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "TUNAR", "label": "TUNAR", "shape": "dot", "size": 10.18, "title": "TUNAR\u003cbr\u003ePCC: 0.870\u003cbr\u003eTumor: PAAD Tumor", "x": -350.97662927342026, "y": 16.56331089849722}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SV2A", "label": "SV2A", "shape": "dot", "size": 10.18, "title": "SV2A\u003cbr\u003ePCC: 0.870\u003cbr\u003eTumor: PAAD Tumor", "x": -354.0, "y": 4.3352496689816306e-14}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "DUSP26", "label": "DUSP26", "shape": "dot", "size": 10.04, "title": "DUSP26\u003cbr\u003ePCC: 0.860\u003cbr\u003eTumor: PAAD Tumor", "x": -351.73747448645634, "y": -16.810524493997075}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-384O8.1", "label": "RP11-384O8.1", "shape": "dot", "size": 10.04, "title": "RP11-384O8.1\u003cbr\u003ePCC: 0.860\u003cbr\u003eTumor: PAAD Tumor", "x": -344.3341312917471, "y": -32.21063182562749}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "P2RX6", "label": "P2RX6", "shape": "dot", "size": 10.04, "title": "P2RX6\u003cbr\u003ePCC: 0.860\u003cbr\u003eTumor: PAAD Tumor", "x": -332.44574592654453, "y": -44.65773808949706}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-531A24.3", "label": "RP11-531A24.3", "shape": "dot", "size": 10.04, "title": "RP11-531A24.3\u003cbr\u003ePCC: 0.860\u003cbr\u003eTumor: PAAD Tumor", "x": -317.18134488724706, "y": -52.8787423060105}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "GCK", "label": "GCK", "shape": "dot", "size": 10.04, "title": "GCK\u003cbr\u003ePCC: 0.860\u003cbr\u003eTumor: PAAD Tumor", "x": -300.0, "y": -55.999999999999964}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "DLGAP3", "label": "DLGAP3", "shape": "dot", "size": 10.04, "title": "DLGAP3\u003cbr\u003ePCC: 0.860\u003cbr\u003eTumor: PAAD Tumor", "x": -282.571441517253, "y": -53.63958751904663}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "BAIAP3", "label": "BAIAP3", "shape": "dot", "size": 9.899999999999999, "title": "BAIAP3\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -266.6137976697875, "y": -45.952165280496985}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP4-547N15.3", "label": "RP4-547N15.3", "shape": "dot", "size": 9.899999999999999, "title": "RP4-547N15.3\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -253.72422792175303, "y": -33.62131643112944}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "LINC00643", "label": "LINC00643", "shape": "dot", "size": 9.899999999999999, "title": "LINC00643\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -245.21914466139916, "y": -17.79937887599695}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SLC12A5", "label": "SLC12A5", "shape": "dot", "size": 9.899999999999999, "title": "SLC12A5\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -242.0, "y": 2.25335011043113e-14}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "LRRN3", "label": "LRRN3", "shape": "dot", "size": 9.899999999999999, "title": "LRRN3\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -244.45829944836302, "y": 18.04659247149695}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "NECAB2", "label": "NECAB2", "shape": "dot", "size": 9.899999999999999, "title": "NECAB2\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -252.42980073075304, "y": 34.5617728347974}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-159H10.3", "label": "RP11-159H10.3", "shape": "dot", "size": 9.899999999999999, "title": "RP11-159H10.3\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -265.20311306428556, "y": 47.893806066996916}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "TMEM59L", "label": "TMEM59L", "shape": "dot", "size": 9.899999999999999, "title": "TMEM59L\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -281.5825871352531, "y": 56.68296837119119}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SVOP", "label": "SVOP", "shape": "dot", "size": 9.899999999999999, "title": "SVOP\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -300.0, "y": 60.000000000000036}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "MAGEL2", "label": "MAGEL2", "shape": "dot", "size": 9.899999999999999, "title": "MAGEL2\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: PAAD Tumor", "x": -318.6646264602468, "y": 57.443813584227314}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "MYO3A", "label": "MYO3A", "shape": "dot", "size": 9.76, "title": "MYO3A\u003cbr\u003ePCC: 0.840\u003cbr\u003eTumor: PAAD Tumor", "x": -335.73734333938233, "y": 49.18823325799684}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "LY6H", "label": "LY6H", "shape": "dot", "size": 9.76, "title": "LY6H\u003cbr\u003ePCC: 0.840\u003cbr\u003eTumor: PAAD Tumor", "x": -349.5118400557468, "y": 35.97245744029941}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SYT7", "label": "SYT7", "shape": "dot", "size": 9.76, "title": "SYT7\u003cbr\u003ePCC: 0.840\u003cbr\u003eTumor: PAAD Tumor", "x": -358.58508140378143, "y": 19.03544685349682}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RIPPLY2", "label": "RIPPLY2", "shape": "dot", "size": 9.76, "title": "RIPPLY2\u003cbr\u003ePCC: 0.840\u003cbr\u003eTumor: PAAD Tumor", "x": -362.0, "y": 5.951783443856136e-14}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "FXYD6", "label": "FXYD6", "shape": "dot", "size": 9.76, "title": "FXYD6\u003cbr\u003ePCC: 0.840\u003cbr\u003eTumor: PAAD Tumor", "x": -359.34592661681756, "y": -19.282660448996662}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "HS3ST4", "label": "HS3ST4", "shape": "dot", "size": 9.76, "title": "HS3ST4\u003cbr\u003ePCC: 0.840\u003cbr\u003eTumor: PAAD Tumor", "x": -350.8062672467467, "y": -36.91291384396725}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "LMO1", "label": "LMO1", "shape": "dot", "size": 9.76, "title": "LMO1\u003cbr\u003ePCC: 0.840\u003cbr\u003eTumor: PAAD Tumor", "x": -337.14802794488435, "y": -51.12987404449663}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "HMGCLL1", "label": "HMGCLL1", "shape": "dot", "size": 9.76, "title": "HMGCLL1\u003cbr\u003ePCC: 0.840\u003cbr\u003eTumor: PAAD Tumor", "x": -319.65348084224667, "y": -60.48719443637172}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "C3orf14", "label": "C3orf14", "shape": "dot", "size": 9.62, "title": "C3orf14\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -300.0, "y": -63.999999999999964}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "NLRP1", "label": "NLRP1", "shape": "dot", "size": 9.62, "title": "NLRP1\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -280.0993055622534, "y": -61.24803964940787}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SNCB", "label": "SNCB", "shape": "dot", "size": 9.62, "title": "SNCB\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -261.91151565144776, "y": -52.42430123549657}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "UCN3", "label": "UCN3", "shape": "dot", "size": 9.62, "title": "UCN3\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -247.25209196675345, "y": -38.32359844946924}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-220C2.1", "label": "RP11-220C2.1", "shape": "dot", "size": 9.62, "title": "RP11-220C2.1\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -237.61069253103796, "y": -20.271514830996544}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SSTR3", "label": "SSTR3", "shape": "dot", "size": 9.62, "title": "SSTR3\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -234.0, "y": 4.408728476930472e-15}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SLC22A17", "label": "SLC22A17", "shape": "dot", "size": 9.62, "title": "SLC22A17\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -236.84984731800176, "y": 20.518728426496402}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SCML2", "label": "SCML2", "shape": "dot", "size": 9.62, "title": "SCML2\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -245.9576647757535, "y": 39.26405485313721}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SDK1", "label": "SDK1", "shape": "dot", "size": 9.62, "title": "SDK1\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -260.5008310459458, "y": 54.36594202199648}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SYP", "label": "SYP", "shape": "dot", "size": 9.62, "title": "SYP\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -279.1104511802534, "y": 64.29142050155237}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "C15orf59", "label": "C15orf59", "shape": "dot", "size": 9.62, "title": "C15orf59\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -299.99999999999994, "y": 68.00000000000004}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "AMPH", "label": "AMPH", "shape": "dot", "size": 9.62, "title": "AMPH\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -321.1367624152464, "y": 65.05226571458857}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-350G8.5", "label": "RP11-350G8.5", "shape": "dot", "size": 9.62, "title": "RP11-350G8.5\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -340.4396253577222, "y": 55.660369212996365}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-449J10.1", "label": "RP11-449J10.1", "shape": "dot", "size": 9.62, "title": "RP11-449J10.1\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: PAAD Tumor", "x": -355.98397601074635, "y": 40.67473945863921}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SCG5", "label": "SCG5", "shape": "dot", "size": 9.48, "title": "SCG5\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -366.1935335341426, "y": 21.50758280849653}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "TMEM17", "label": "TMEM17", "shape": "dot", "size": 9.48, "title": "TMEM17\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -370.0, "y": 7.960204194457796e-14}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "PTPRN", "label": "PTPRN", "shape": "dot", "size": 9.48, "title": "PTPRN\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -366.95437874717885, "y": -21.754796403996103}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "ARG2", "label": "ARG2", "shape": "dot", "size": 9.48, "title": "ARG2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -357.2784032017463, "y": -41.61519586230702}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "TMOD1", "label": "TMOD1", "shape": "dot", "size": 9.48, "title": "TMOD1\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -341.85030996322405, "y": -57.602009999496275}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "PNMAL1", "label": "PNMAL1", "shape": "dot", "size": 9.48, "title": "PNMAL1\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -322.12561679724627, "y": -68.09564656673294}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "GPRASP2", "label": "GPRASP2", "shape": "dot", "size": 9.48, "title": "GPRASP2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -299.99999999999994, "y": -71.99999999999996}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "KCNJ6", "label": "KCNJ6", "shape": "dot", "size": 9.48, "title": "KCNJ6\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -277.62716960725385, "y": -68.8564917797691}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "AC099684.1", "label": "AC099684.1", "shape": "dot", "size": 9.48, "title": "AC099684.1\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -257.2092336331081, "y": -58.89643719049624}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "AC010980.2", "label": "AC010980.2", "shape": "dot", "size": 9.48, "title": "AC010980.2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -240.77995601175388, "y": -43.02588046780904}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SNAP25-AS1", "label": "SNAP25-AS1", "shape": "dot", "size": 9.48, "title": "SNAP25-AS1\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -230.00224040067678, "y": -22.743650785996266}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "LINC00870", "label": "LINC00870", "shape": "dot", "size": 9.48, "title": "LINC00870\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -226.0, "y": -1.7634913907721887e-14}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "OGDHL", "label": "OGDHL", "shape": "dot", "size": 9.48, "title": "OGDHL\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -229.2413951876406, "y": 22.9908643814962}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "DHRS2", "label": "DHRS2", "shape": "dot", "size": 9.48, "title": "DHRS2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -239.4855288207539, "y": 43.966336871476976}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "CNIH2", "label": "CNIH2", "shape": "dot", "size": 9.48, "title": "CNIH2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: PAAD Tumor", "x": -255.79854902760607, "y": 60.838077976996125}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "CTA-796E4.4", "label": "CTA-796E4.4", "shape": "dot", "size": 9.34, "title": "CTA-796E4.4\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -276.6383152252539, "y": 71.89987263191362}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "MAMLD1", "label": "MAMLD1", "shape": "dot", "size": 9.34, "title": "MAMLD1\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -299.99999999999983, "y": 76.00000000000004}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "ISL1", "label": "ISL1", "shape": "dot", "size": 9.34, "title": "ISL1\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -323.6088983702459, "y": 72.6607178449498}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-433A10.3", "label": "RP11-433A10.3", "shape": "dot", "size": 9.34, "title": "RP11-433A10.3\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -345.1419073760618, "y": 62.132505167996115}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "REEP2", "label": "REEP2", "shape": "dot", "size": 9.34, "title": "REEP2\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -362.4561119657459, "y": 45.37702147697902}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP13-514E23.1", "label": "RP13-514E23.1", "shape": "dot", "size": 9.34, "title": "RP13-514E23.1\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -373.80198566450395, "y": 23.97971876349589}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "CELF5", "label": "CELF5", "shape": "dot", "size": 9.34, "title": "CELF5\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -378.0, "y": 1.0360511920786607e-13}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "KCNH6", "label": "KCNH6", "shape": "dot", "size": 9.34, "title": "KCNH6\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -374.56283087754, "y": -24.22693235899591}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "CXorf57", "label": "CXorf57", "shape": "dot", "size": 9.34, "title": "CXorf57\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -363.7505391567459, "y": -46.31747788064679}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "GRM4", "label": "GRM4", "shape": "dot", "size": 9.34, "title": "GRM4\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -346.55259198156403, "y": -64.07414595449568}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SYNGR4", "label": "SYNGR4", "shape": "dot", "size": 9.34, "title": "SYNGR4\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -324.59775275224587, "y": -75.70409869709415}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "ELOVL4", "label": "ELOVL4", "shape": "dot", "size": 9.34, "title": "ELOVL4\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -300.0000000000002, "y": -79.99999999999996}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SEC11C", "label": "SEC11C", "shape": "dot", "size": 9.34, "title": "SEC11C\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -275.1550336522543, "y": -76.46494391013033}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "CPLX2", "label": "CPLX2", "shape": "dot", "size": 9.34, "title": "CPLX2\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: PAAD Tumor", "x": -252.50695161476813, "y": -65.36857314549566}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "C22orf42", "label": "C22orf42", "shape": "dot", "size": 9.200000000000001, "title": "C22orf42\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -234.3078200567543, "y": -47.72816248614885}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "MPP2", "label": "MPP2", "shape": "dot", "size": 9.200000000000001, "title": "MPP2\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -222.39378827031544, "y": -25.21578674099561}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "PACRG", "label": "PACRG", "shape": "dot", "size": 9.200000000000001, "title": "PACRG\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -218.0, "y": -4.3597426049645776e-14}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "NAP1L5", "label": "NAP1L5", "shape": "dot", "size": 9.200000000000001, "title": "NAP1L5\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -221.63294305727928, "y": 25.463000336495487}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RTN1", "label": "RTN1", "shape": "dot", "size": 9.200000000000001, "title": "RTN1\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -233.01339286575413, "y": 48.668618889816514}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "KCNJ11", "label": "KCNJ11", "shape": "dot", "size": 9.200000000000001, "title": "KCNJ11\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -251.09626700926628, "y": 67.3102139319957}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "HSD17B14", "label": "HSD17B14", "shape": "dot", "size": 9.200000000000001, "title": "HSD17B14\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -274.1661792702543, "y": 79.50832476227485}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "MTMR7", "label": "MTMR7", "shape": "dot", "size": 9.200000000000001, "title": "MTMR7\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -300.00000000000006, "y": 84.00000000000004}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "MIR670HG", "label": "MIR670HG", "shape": "dot", "size": 9.200000000000001, "title": "MIR670HG\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -326.08103432524547, "y": 80.26916997531103}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "SLC6A17", "label": "SLC6A17", "shape": "dot", "size": 9.200000000000001, "title": "SLC6A17\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -349.84418939440155, "y": 68.60464112299573}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-586D19.1", "label": "RP11-586D19.1", "shape": "dot", "size": 9.200000000000001, "title": "RP11-586D19.1\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -368.9282479207453, "y": 50.07930349531907}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "ASTN1", "label": "ASTN1", "shape": "dot", "size": 9.200000000000001, "title": "ASTN1\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -381.4104377948652, "y": 26.45185471849548}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "ASB16", "label": "ASB16", "shape": "dot", "size": 9.200000000000001, "title": "ASB16\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -386.0, "y": 1.3152706622842575e-13}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "CTB-49A3.4", "label": "CTB-49A3.4", "shape": "dot", "size": 9.200000000000001, "title": "CTB-49A3.4\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -382.17128300790137, "y": -26.699068313995188}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "EML6", "label": "EML6", "shape": "dot", "size": 9.200000000000001, "title": "EML6\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -370.2226751117455, "y": -51.019759898986564}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "FAM184A", "label": "FAM184A", "shape": "dot", "size": 9.200000000000001, "title": "FAM184A\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -351.25487399990385, "y": -70.54628190949522}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "TMCC2", "label": "TMCC2", "shape": "dot", "size": 9.200000000000001, "title": "TMCC2\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -327.0698887072452, "y": -83.31255082745547}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "FRRS1L", "label": "FRRS1L", "shape": "dot", "size": 9.200000000000001, "title": "FRRS1L\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -299.99999999999994, "y": -87.99999999999996}, {"borderWidth": 1, "color": {"background": "#01FF70", "border": "#01FF70"}, "font": {"color": "black"}, "id": "RP11-465L10.10", "label": "RP11-465L10.10", "shape": "dot", "size": 9.200000000000001, "title": "RP11-465L10.10\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: PAAD Tumor", "x": -272.68289769725476, "y": -84.07339604049157}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "SLAMF7", "label": "SLAMF7", "shape": "dot", "size": 7.9399999999999995, "title": "SLAMF7\u003cbr\u003ePCC: 0.710\u003cbr\u003eTumor: SARC Tumor", "x": -162.1320343559643, "y": -212.13203435596424}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "FYB", "label": "FYB", "shape": "dot", "size": 7.659999999999999, "title": "FYB\u003cbr\u003ePCC: 0.690\u003cbr\u003eTumor: SARC Tumor", "x": -164.19878593468854, "y": -196.5575778394669}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "TAP1", "label": "TAP1", "shape": "dot", "size": 7.5200000000000005, "title": "TAP1\u003cbr\u003ePCC: 0.680\u003cbr\u003eTumor: SARC Tumor", "x": -171.03397104171697, "y": -182.27254353950661}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "LCP2", "label": "LCP2", "shape": "dot", "size": 7.380000000000001, "title": "LCP2\u003cbr\u003ePCC: 0.670\u003cbr\u003eTumor: SARC Tumor", "x": -182.03742943858967, "y": -170.71036424396692}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "APOBEC3H", "label": "APOBEC3H", "shape": "dot", "size": 7.380000000000001, "title": "APOBEC3H\u003cbr\u003ePCC: 0.670\u003cbr\u003eTumor: SARC Tumor", "x": -196.186757446217, "y": -163.05751811513431}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CTSS", "label": "CTSS", "shape": "dot", "size": 7.24, "title": "CTSS\u003cbr\u003ePCC: 0.660\u003cbr\u003eTumor: SARC Tumor", "x": -212.1320343559643, "y": -160.13203435596424}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "GBP1P1", "label": "GBP1P1", "shape": "dot", "size": 7.24, "title": "GBP1P1\u003cbr\u003ePCC: 0.660\u003cbr\u003eTumor: SARC Tumor", "x": -228.32452486121153, "y": -162.29667290209818}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CECR1", "label": "CECR1", "shape": "dot", "size": 7.1000000000000005, "title": "CECR1\u003cbr\u003ePCC: 0.650\u003cbr\u003eTumor: SARC Tumor", "x": -243.16709567700687, "y": -169.41593705296702}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "TOMM20P2", "label": "TOMM20P2", "shape": "dot", "size": 7.1000000000000005, "title": "TOMM20P2\u003cbr\u003ePCC: 0.650\u003cbr\u003eTumor: SARC Tumor", "x": -255.1717384567115, "y": -180.86185893400466}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "IL18BP", "label": "IL18BP", "shape": "dot", "size": 7.1000000000000005, "title": "IL18BP\u003cbr\u003ePCC: 0.650\u003cbr\u003eTumor: SARC Tumor", "x": -263.1086636293845, "y": -195.56872345746706}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "UBD", "label": "UBD", "shape": "dot", "size": 6.96, "title": "UBD\u003cbr\u003ePCC: 0.640\u003cbr\u003eTumor: SARC Tumor", "x": -266.13203435596427, "y": -212.13203435596424}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "GBP1", "label": "GBP1", "shape": "dot", "size": 6.96, "title": "GBP1\u003cbr\u003ePCC: 0.640\u003cbr\u003eTumor: SARC Tumor", "x": -263.86950884242066, "y": -228.94255884996136}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "PYHIN1", "label": "PYHIN1", "shape": "dot", "size": 6.96, "title": "PYHIN1\u003cbr\u003ePCC: 0.640\u003cbr\u003eTumor: SARC Tumor", "x": -256.4661656477114, "y": -244.34266618159177}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "EOMES", "label": "EOMES", "shape": "dot", "size": 6.96, "title": "EOMES\u003cbr\u003ePCC: 0.640\u003cbr\u003eTumor: SARC Tumor", "x": -244.57778028250883, "y": -256.7897724454613}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "KMO", "label": "KMO", "shape": "dot", "size": 6.96, "title": "KMO\u003cbr\u003ePCC: 0.640\u003cbr\u003eTumor: SARC Tumor", "x": -229.3133792432114, "y": -265.0107766619748}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "UBE2L6", "label": "UBE2L6", "shape": "dot", "size": 6.96, "title": "UBE2L6\u003cbr\u003ePCC: 0.640\u003cbr\u003eTumor: SARC Tumor", "x": -212.1320343559643, "y": -268.13203435596427}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CCL8", "label": "CCL8", "shape": "dot", "size": 6.82, "title": "CCL8\u003cbr\u003ePCC: 0.630\u003cbr\u003eTumor: SARC Tumor", "x": -194.70347587321726, "y": -265.7716218750109}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CLEC6A", "label": "CLEC6A", "shape": "dot", "size": 6.82, "title": "CLEC6A\u003cbr\u003ePCC: 0.630\u003cbr\u003eTumor: SARC Tumor", "x": -178.74583202575184, "y": -258.0841996364613}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CXCL11", "label": "CXCL11", "shape": "dot", "size": 6.82, "title": "CXCL11\u003cbr\u003ePCC: 0.630\u003cbr\u003eTumor: SARC Tumor", "x": -165.8562622777173, "y": -245.75335078709372}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CD72", "label": "CD72", "shape": "dot", "size": 6.82, "title": "CD72\u003cbr\u003ePCC: 0.630\u003cbr\u003eTumor: SARC Tumor", "x": -157.35117901736345, "y": -229.93141323196122}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "SCIMP", "label": "SCIMP", "shape": "dot", "size": 6.82, "title": "SCIMP\u003cbr\u003ePCC: 0.630\u003cbr\u003eTumor: SARC Tumor", "x": -154.1320343559643, "y": -212.13203435596424}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "HLA-E", "label": "HLA-E", "shape": "dot", "size": 6.82, "title": "HLA-E\u003cbr\u003ePCC: 0.630\u003cbr\u003eTumor: SARC Tumor", "x": -156.59033380432732, "y": -194.08544188446731}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "PTPRC", "label": "PTPRC", "shape": "dot", "size": 6.82, "title": "PTPRC\u003cbr\u003ePCC: 0.630\u003cbr\u003eTumor: SARC Tumor", "x": -164.56183508671734, "y": -177.57026152116686}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CD96", "label": "CD96", "shape": "dot", "size": 6.82, "title": "CD96\u003cbr\u003ePCC: 0.630\u003cbr\u003eTumor: SARC Tumor", "x": -177.33514742024988, "y": -164.23822828896735}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "EPSTI1", "label": "EPSTI1", "shape": "dot", "size": 6.68, "title": "EPSTI1\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -193.7146214912174, "y": -155.44906598477309}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "B2M", "label": "B2M", "shape": "dot", "size": 6.68, "title": "B2M\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -212.13203435596427, "y": -152.13203435596424}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "SNX20", "label": "SNX20", "shape": "dot", "size": 6.68, "title": "SNX20\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -230.7966608162111, "y": -154.68822077173695}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "LCK", "label": "LCK", "shape": "dot", "size": 6.68, "title": "LCK\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -247.86937769534666, "y": -162.94380109796742}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "LCP1", "label": "LCP1", "shape": "dot", "size": 6.68, "title": "LCP1\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -261.64387441171107, "y": -176.15957691566487}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "BIN2", "label": "BIN2", "shape": "dot", "size": 6.68, "title": "BIN2\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -270.71711575974575, "y": -193.09658750246746}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "SEMA4A", "label": "SEMA4A", "shape": "dot", "size": 6.68, "title": "SEMA4A\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -274.13203435596427, "y": -212.1320343559642}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CD48", "label": "CD48", "shape": "dot", "size": 6.68, "title": "CD48\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -271.4779609727819, "y": -231.41469480496093}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "AD000671.6", "label": "AD000671.6", "shape": "dot", "size": 6.68, "title": "AD000671.6\u003cbr\u003ePCC: 0.620\u003cbr\u003eTumor: SARC Tumor", "x": -262.938301602711, "y": -249.04494819993153}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CD3E", "label": "CD3E", "shape": "dot", "size": 6.54, "title": "CD3E\u003cbr\u003ePCC: 0.610\u003cbr\u003eTumor: SARC Tumor", "x": -249.2800623008486, "y": -263.2619084004609}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "PSMB9", "label": "PSMB9", "shape": "dot", "size": 6.54, "title": "PSMB9\u003cbr\u003ePCC: 0.610\u003cbr\u003eTumor: SARC Tumor", "x": -231.785515198211, "y": -272.619228792336}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "NCF1B", "label": "NCF1B", "shape": "dot", "size": 6.54, "title": "NCF1B\u003cbr\u003ePCC: 0.610\u003cbr\u003eTumor: SARC Tumor", "x": -212.13203435596432, "y": -276.13203435596427}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "XCR1", "label": "XCR1", "shape": "dot", "size": 6.54, "title": "XCR1\u003cbr\u003ePCC: 0.610\u003cbr\u003eTumor: SARC Tumor", "x": -192.2313399182177, "y": -273.38007400537214}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "TAP2", "label": "TAP2", "shape": "dot", "size": 6.54, "title": "TAP2\u003cbr\u003ePCC: 0.610\u003cbr\u003eTumor: SARC Tumor", "x": -174.04355000741205, "y": -264.5563355914608}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "GFI1", "label": "GFI1", "shape": "dot", "size": 6.54, "title": "GFI1\u003cbr\u003ePCC: 0.610\u003cbr\u003eTumor: SARC Tumor", "x": -159.38412632271775, "y": -250.4556328054335}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "CXCR3", "label": "CXCR3", "shape": "dot", "size": 6.54, "title": "CXCR3\u003cbr\u003ePCC: 0.610\u003cbr\u003eTumor: SARC Tumor", "x": -149.74272688700222, "y": -232.40354918696082}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "IL2RG", "label": "IL2RG", "shape": "dot", "size": 6.3999999999999995, "title": "IL2RG\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -146.1320343559643, "y": -212.13203435596427}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "TRAV8-4", "label": "TRAV8-4", "shape": "dot", "size": 6.3999999999999995, "title": "TRAV8-4\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -148.98188167396603, "y": -191.61330592946786}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "P2RY10", "label": "P2RY10", "shape": "dot", "size": 6.3999999999999995, "title": "P2RY10\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -158.0896991317178, "y": -172.86797950282707}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "PVRIG", "label": "PVRIG", "shape": "dot", "size": 6.3999999999999995, "title": "PVRIG\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -172.63286540191007, "y": -157.76609233396778}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "NCF1", "label": "NCF1", "shape": "dot", "size": 6.3999999999999995, "title": "NCF1\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -191.2424855362177, "y": -147.8406138544119}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "TRAV9-2", "label": "TRAV9-2", "shape": "dot", "size": 6.3999999999999995, "title": "TRAV9-2\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -212.13203435596427, "y": -144.13203435596424}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "TYMP", "label": "TYMP", "shape": "dot", "size": 6.3999999999999995, "title": "TYMP\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -233.26879677121067, "y": -147.07976864137572}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "SIGLEC14", "label": "SIGLEC14", "shape": "dot", "size": 6.3999999999999995, "title": "SIGLEC14\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -252.57165971368653, "y": -156.4716651429679}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "SIT1", "label": "SIT1", "shape": "dot", "size": 6.3999999999999995, "title": "SIT1\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -268.1160103667106, "y": -171.45729489732506}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "APOL6", "label": "APOL6", "shape": "dot", "size": 6.3999999999999995, "title": "APOL6\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -278.3255678901069, "y": -190.62445154746774}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "TNFSF13B", "label": "TNFSF13B", "shape": "dot", "size": 6.3999999999999995, "title": "TNFSF13B\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -282.13203435596427, "y": -212.13203435596418}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "ITGB7", "label": "ITGB7", "shape": "dot", "size": 6.3999999999999995, "title": "ITGB7\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -279.0864131031432, "y": -233.8868307599604}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "HLA-A", "label": "HLA-A", "shape": "dot", "size": 6.3999999999999995, "title": "HLA-A\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: SARC Tumor", "x": -269.41043755771057, "y": -253.74723021827128}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "IL32", "label": "IL32", "shape": "dot", "size": 6.26, "title": "IL32\u003cbr\u003ePCC: 0.590\u003cbr\u003eTumor: SARC Tumor", "x": -253.98234431918831, "y": -269.7340443554605}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "TRAV12-3", "label": "TRAV12-3", "shape": "dot", "size": 6.26, "title": "TRAV12-3\u003cbr\u003ePCC: 0.590\u003cbr\u003eTumor: SARC Tumor", "x": -234.2576511532106, "y": -280.22768092269723}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "RARRES3", "label": "RARRES3", "shape": "dot", "size": 6.26, "title": "RARRES3\u003cbr\u003ePCC: 0.590\u003cbr\u003eTumor: SARC Tumor", "x": -212.1320343559642, "y": -284.13203435596427}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "PIK3CD-AS1", "label": "PIK3CD-AS1", "shape": "dot", "size": 6.26, "title": "PIK3CD-AS1\u003cbr\u003ePCC: 0.590\u003cbr\u003eTumor: SARC Tumor", "x": -189.75920396321814, "y": -280.98852613573337}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "VNN2", "label": "VNN2", "shape": "dot", "size": 6.26, "title": "VNN2\u003cbr\u003ePCC: 0.590\u003cbr\u003eTumor: SARC Tumor", "x": -169.3412679890724, "y": -271.02847154646054}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "ZNF80", "label": "ZNF80", "shape": "dot", "size": 6.26, "title": "ZNF80\u003cbr\u003ePCC: 0.590\u003cbr\u003eTumor: SARC Tumor", "x": -152.91199036771818, "y": -255.1579148237733}, {"borderWidth": 1, "color": {"background": "#B10DC9", "border": "#B10DC9"}, "font": {"color": "black"}, "id": "ITK", "label": "ITK", "shape": "dot", "size": 6.26, "title": "ITK\u003cbr\u003ePCC: 0.590\u003cbr\u003eTumor: SARC Tumor", "x": -142.13427475664105, "y": -234.87568514196053}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "FASLG", "label": "FASLG", "shape": "dot", "size": 10.32, "title": "FASLG\u003cbr\u003ePCC: 0.880\u003cbr\u003eTumor: SKCM Tumor", "x": 49.99999999999994, "y": -300.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "JAKMIP1", "label": "JAKMIP1", "shape": "dot", "size": 10.18, "title": "JAKMIP1\u003cbr\u003ePCC: 0.870\u003cbr\u003eTumor: SKCM Tumor", "x": 47.93324842127568, "y": -284.4255434835027}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "GZMA", "label": "GZMA", "shape": "dot", "size": 10.18, "title": "GZMA\u003cbr\u003ePCC: 0.870\u003cbr\u003eTumor: SKCM Tumor", "x": 41.09806331424727, "y": -270.14050918354235}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "IL2RB", "label": "IL2RB", "shape": "dot", "size": 10.04, "title": "IL2RB\u003cbr\u003ePCC: 0.860\u003cbr\u003eTumor: SKCM Tumor", "x": 30.094604917374568, "y": -258.5783298880027}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "HAVCR2", "label": "HAVCR2", "shape": "dot", "size": 9.899999999999999, "title": "HAVCR2\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: SKCM Tumor", "x": 15.945276909747234, "y": -250.92548375917008}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "SIRPG", "label": "SIRPG", "shape": "dot", "size": 9.899999999999999, "title": "SIRPG\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: SKCM Tumor", "x": -5.192502428384777e-14, "y": -248.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "CD8B", "label": "CD8B", "shape": "dot", "size": 9.899999999999999, "title": "CD8B\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: SKCM Tumor", "x": -16.192490505247296, "y": -250.16463854613394}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "PDCD1", "label": "PDCD1", "shape": "dot", "size": 9.899999999999999, "title": "PDCD1\u003cbr\u003ePCC: 0.850\u003cbr\u003eTumor: SKCM Tumor", "x": -31.03506132104263, "y": -257.28390269700276}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "SAMSN1", "label": "SAMSN1", "shape": "dot", "size": 9.62, "title": "SAMSN1\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: SKCM Tumor", "x": -43.03970410074726, "y": -268.7298245780404}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "CRTAM", "label": "CRTAM", "shape": "dot", "size": 9.62, "title": "CRTAM\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: SKCM Tumor", "x": -50.976629273420286, "y": -283.4366891015028}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "ANKRD22", "label": "ANKRD22", "shape": "dot", "size": 9.62, "title": "ANKRD22\u003cbr\u003ePCC: 0.830\u003cbr\u003eTumor: SKCM Tumor", "x": -54.00000000000006, "y": -300.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "LAG3", "label": "LAG3", "shape": "dot", "size": 9.48, "title": "LAG3\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: SKCM Tumor", "x": -51.73747448645642, "y": -316.8105244939971}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "SLA", "label": "SLA", "shape": "dot", "size": 9.48, "title": "SLA\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: SKCM Tumor", "x": -44.33413129174718, "y": -332.2106318256275}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "AC133644.2", "label": "AC133644.2", "shape": "dot", "size": 9.48, "title": "AC133644.2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: SKCM Tumor", "x": -32.44574592654458, "y": -344.6577380894971}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "PSTPIP2", "label": "PSTPIP2", "shape": "dot", "size": 9.48, "title": "PSTPIP2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: SKCM Tumor", "x": -17.181344887247143, "y": -352.8787423060105}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "TRGC2", "label": "TRGC2", "shape": "dot", "size": 9.48, "title": "TRGC2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: SKCM Tumor", "x": -6.539613907446866e-14, "y": -356.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "GNGT2", "label": "GNGT2", "shape": "dot", "size": 9.48, "title": "GNGT2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: SKCM Tumor", "x": 17.428558482746965, "y": -353.63958751904664}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "TRGV2", "label": "TRGV2", "shape": "dot", "size": 9.48, "title": "TRGV2\u003cbr\u003ePCC: 0.820\u003cbr\u003eTumor: SKCM Tumor", "x": 33.386202330212406, "y": -345.952165280497}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "ZBED2", "label": "ZBED2", "shape": "dot", "size": 9.34, "title": "ZBED2\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: SKCM Tumor", "x": 46.27577207824693, "y": -333.62131643112946}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "AC017002.1", "label": "AC017002.1", "shape": "dot", "size": 9.34, "title": "AC017002.1\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: SKCM Tumor", "x": 54.78085533860079, "y": -317.799378875997}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "APOL3", "label": "APOL3", "shape": "dot", "size": 9.34, "title": "APOL3\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: SKCM Tumor", "x": 57.99999999999994, "y": -300.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "RP11-10J5.1", "label": "RP11-10J5.1", "shape": "dot", "size": 9.34, "title": "RP11-10J5.1\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: SKCM Tumor", "x": 55.541700551636914, "y": -281.9534075285031}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "KLRD1", "label": "KLRD1", "shape": "dot", "size": 9.34, "title": "KLRD1\u003cbr\u003ePCC: 0.810\u003cbr\u003eTumor: SKCM Tumor", "x": 47.57019926924689, "y": -265.43822716520265}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "TNFRSF9", "label": "TNFRSF9", "shape": "dot", "size": 9.200000000000001, "title": "TNFRSF9\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: SKCM Tumor", "x": 34.79688693571437, "y": -252.1061939330031}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "AC092580.4", "label": "AC092580.4", "shape": "dot", "size": 9.200000000000001, "title": "AC092580.4\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: SKCM Tumor", "x": 18.41741286474683, "y": -243.31703162880885}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "TRGV10", "label": "TRGV10", "shape": "dot", "size": 9.200000000000001, "title": "TRGV10\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: SKCM Tumor", "x": -3.6739403974420595e-14, "y": -240.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "SH2D1A", "label": "SH2D1A", "shape": "dot", "size": 9.200000000000001, "title": "SH2D1A\u003cbr\u003ePCC: 0.800\u003cbr\u003eTumor: SKCM Tumor", "x": -18.66462646024686, "y": -242.55618641577271}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "IL10RA", "label": "IL10RA", "shape": "dot", "size": 9.06, "title": "IL10RA\u003cbr\u003ePCC: 0.790\u003cbr\u003eTumor: SKCM Tumor", "x": -35.737343339382406, "y": -250.8117667420032}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "FCGR1B", "label": "FCGR1B", "shape": "dot", "size": 9.06, "title": "FCGR1B\u003cbr\u003ePCC: 0.790\u003cbr\u003eTumor: SKCM Tumor", "x": -49.51184005574683, "y": -264.02754255970063}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "FCRL6", "label": "FCRL6", "shape": "dot", "size": 9.06, "title": "FCRL6\u003cbr\u003ePCC: 0.790\u003cbr\u003eTumor: SKCM Tumor", "x": -58.58508140378151, "y": -280.9645531465032}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "SAMD3", "label": "SAMD3", "shape": "dot", "size": 9.06, "title": "SAMD3\u003cbr\u003ePCC: 0.790\u003cbr\u003eTumor: SKCM Tumor", "x": -62.00000000000006, "y": -300.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "HMGB3P32", "label": "HMGB3P32", "shape": "dot", "size": 9.06, "title": "HMGB3P32\u003cbr\u003ePCC: 0.790\u003cbr\u003eTumor: SKCM Tumor", "x": -59.34592661681764, "y": -319.2826604489967}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "CTD-2547L24.3", "label": "CTD-2547L24.3", "shape": "dot", "size": 8.92, "title": "CTD-2547L24.3\u003cbr\u003ePCC: 0.780\u003cbr\u003eTumor: SKCM Tumor", "x": -50.80626724674677, "y": -336.9129138439673}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "CTSW", "label": "CTSW", "shape": "dot", "size": 8.92, "title": "CTSW\u003cbr\u003ePCC: 0.780\u003cbr\u003eTumor: SKCM Tumor", "x": -37.14802794488438, "y": -351.12987404449666}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "FCGR1A", "label": "FCGR1A", "shape": "dot", "size": 8.92, "title": "FCGR1A\u003cbr\u003ePCC: 0.780\u003cbr\u003eTumor: SKCM Tumor", "x": -19.65348084224674, "y": -360.48719443637174}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "AC069363.1", "label": "AC069363.1", "shape": "dot", "size": 8.92, "title": "AC069363.1\u003cbr\u003ePCC: 0.780\u003cbr\u003eTumor: SKCM Tumor", "x": -8.25411942625316e-14, "y": -364.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "GIMAP5", "label": "GIMAP5", "shape": "dot", "size": 8.92, "title": "GIMAP5\u003cbr\u003ePCC: 0.780\u003cbr\u003eTumor: SKCM Tumor", "x": 19.900694437746534, "y": -361.24803964940793}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "AIF1", "label": "AIF1", "shape": "dot", "size": 8.92, "title": "AIF1\u003cbr\u003ePCC: 0.780\u003cbr\u003eTumor: SKCM Tumor", "x": 38.08848434855218, "y": -352.4243012354966}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "PLEK", "label": "PLEK", "shape": "dot", "size": 8.92, "title": "PLEK\u003cbr\u003ePCC: 0.780\u003cbr\u003eTumor: SKCM Tumor", "x": 52.747908033246496, "y": -338.3235984494693}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "TRAV19", "label": "TRAV19", "shape": "dot", "size": 8.780000000000001, "title": "TRAV19\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": 62.389307468962, "y": -320.2715148309966}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "GRIN3A", "label": "GRIN3A", "shape": "dot", "size": 8.780000000000001, "title": "GRIN3A\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": 65.99999999999994, "y": -300.00000000000006}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "C1QA", "label": "C1QA", "shape": "dot", "size": 8.780000000000001, "title": "C1QA\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": 63.15015268199819, "y": -279.48127157350365}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "CD86", "label": "CD86", "shape": "dot", "size": 8.780000000000001, "title": "CD86\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": 54.04233522424645, "y": -260.73594514686283}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "STX11", "label": "STX11", "shape": "dot", "size": 8.780000000000001, "title": "STX11\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": 39.49916895405417, "y": -245.63405797800357}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "RP11-109E24.1", "label": "RP11-109E24.1", "shape": "dot", "size": 8.780000000000001, "title": "RP11-109E24.1\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": 20.889548819746537, "y": -235.70857949844768}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "TRAC", "label": "TRAC", "shape": "dot", "size": 8.780000000000001, "title": "TRAC\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": -1.7634913907721887e-14, "y": -232.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "HCST", "label": "HCST", "shape": "dot", "size": 8.780000000000001, "title": "HCST\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": -21.136762415246427, "y": -234.94773428541146}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "ICOS", "label": "ICOS", "shape": "dot", "size": 8.780000000000001, "title": "ICOS\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": -40.43962535772228, "y": -244.33963078700367}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "STAC3", "label": "STAC3", "shape": "dot", "size": 8.780000000000001, "title": "STAC3\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": -55.9839760107464, "y": -259.3252605413608}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "KLRK1", "label": "KLRK1", "shape": "dot", "size": 8.780000000000001, "title": "KLRK1\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": -66.19353353414269, "y": -278.4924171915035}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "C1QC", "label": "C1QC", "shape": "dot", "size": 8.780000000000001, "title": "C1QC\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": -70.00000000000006, "y": -299.99999999999994}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "RP11-305L7.1", "label": "RP11-305L7.1", "shape": "dot", "size": 8.780000000000001, "title": "RP11-305L7.1\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": -66.95437874717892, "y": -321.7547964039961}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "CCL4L2", "label": "CCL4L2", "shape": "dot", "size": 8.780000000000001, "title": "CCL4L2\u003cbr\u003ePCC: 0.770\u003cbr\u003eTumor: SKCM Tumor", "x": -57.27840320174636, "y": -341.6151958623071}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "AOAH", "label": "AOAH", "shape": "dot", "size": 8.64, "title": "AOAH\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": -41.850309963224085, "y": -357.6020099994963}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "LINC01146", "label": "LINC01146", "shape": "dot", "size": 8.64, "title": "LINC01146\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": -22.125616797246337, "y": -368.09564656673297}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "RP11-202G18.1", "label": "RP11-202G18.1", "shape": "dot", "size": 8.64, "title": "RP11-202G18.1\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": 2.4292573228951947e-14, "y": -372.0}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "RP11-652L8.4", "label": "RP11-652L8.4", "shape": "dot", "size": 8.64, "title": "RP11-652L8.4\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": 22.372830392746092, "y": -368.85649177976916}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "CD3D", "label": "CD3D", "shape": "dot", "size": 8.64, "title": "CD3D\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": 42.79076636689184, "y": -358.8964371904963}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "RP11-598F7.3", "label": "RP11-598F7.3", "shape": "dot", "size": 8.64, "title": "RP11-598F7.3\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": 59.22004398824607, "y": -343.0258804678091}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "C1QB", "label": "C1QB", "shape": "dot", "size": 8.64, "title": "C1QB\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": 69.99775959932317, "y": -322.7436507859963}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "SMCO4", "label": "SMCO4", "shape": "dot", "size": 8.64, "title": "SMCO4\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": 73.99999999999994, "y": -300.00000000000006}, {"borderWidth": 1, "color": {"background": "#7FDBFF", "border": "#7FDBFF"}, "font": {"color": "black"}, "id": "PSTPIP1", "label": "PSTPIP1", "shape": "dot", "size": 8.64, "title": "PSTPIP1\u003cbr\u003ePCC: 0.760\u003cbr\u003eTumor: SKCM Tumor", "x": 70.75860481235935, "y": -277.0091356185038}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "NEUROD1", "label": "NEUROD1", "shape": "dot", "size": 6.3999999999999995, "title": "NEUROD1\u003cbr\u003ePCC: 0.600\u003cbr\u003eTumor: STAD Tumor", "x": 262.1320343559642, "y": -212.1320343559643}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "SEZ6", "label": "SEZ6", "shape": "dot", "size": 6.26, "title": "SEZ6\u003cbr\u003ePCC: 0.590\u003cbr\u003eTumor: STAD Tumor", "x": 260.06528277723993, "y": -196.55757783946694}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "CACNG5", "label": "CACNG5", "shape": "dot", "size": 6.119999999999999, "title": "CACNG5\u003cbr\u003ePCC: 0.580\u003cbr\u003eTumor: STAD Tumor", "x": 253.23009767021153, "y": -182.27254353950667}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "KIF19", "label": "KIF19", "shape": "dot", "size": 6.119999999999999, "title": "KIF19\u003cbr\u003ePCC: 0.580\u003cbr\u003eTumor: STAD Tumor", "x": 242.22663927333883, "y": -170.71036424396698}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "NKX2-2", "label": "NKX2-2", "shape": "dot", "size": 6.119999999999999, "title": "NKX2-2\u003cbr\u003ePCC: 0.580\u003cbr\u003eTumor: STAD Tumor", "x": 228.0773112657115, "y": -163.05751811513437}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "CRYBA2", "label": "CRYBA2", "shape": "dot", "size": 6.119999999999999, "title": "CRYBA2\u003cbr\u003ePCC: 0.580\u003cbr\u003eTumor: STAD Tumor", "x": 212.1320343559642, "y": -160.1320343559643}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "NKX2-2-AS1", "label": "NKX2-2-AS1", "shape": "dot", "size": 6.119999999999999, "title": "NKX2-2-AS1\u003cbr\u003ePCC: 0.580\u003cbr\u003eTumor: STAD Tumor", "x": 195.93954385071697, "y": -162.29667290209824}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "RFX6", "label": "RFX6", "shape": "dot", "size": 5.9799999999999995, "title": "RFX6\u003cbr\u003ePCC: 0.570\u003cbr\u003eTumor: STAD Tumor", "x": 181.09697303492163, "y": -169.41593705296708}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "TMEM196", "label": "TMEM196", "shape": "dot", "size": 5.9799999999999995, "title": "TMEM196\u003cbr\u003ePCC: 0.570\u003cbr\u003eTumor: STAD Tumor", "x": 169.092330255217, "y": -180.86185893400472}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "RP11-357K6.1", "label": "RP11-357K6.1", "shape": "dot", "size": 5.9799999999999995, "title": "RP11-357K6.1\u003cbr\u003ePCC: 0.570\u003cbr\u003eTumor: STAD Tumor", "x": 161.15540508254398, "y": -195.56872345746712}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "GPR142", "label": "GPR142", "shape": "dot", "size": 5.840000000000001, "title": "GPR142\u003cbr\u003ePCC: 0.560\u003cbr\u003eTumor: STAD Tumor", "x": 158.1320343559642, "y": -212.1320343559643}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "FEV", "label": "FEV", "shape": "dot", "size": 5.700000000000001, "title": "FEV\u003cbr\u003ePCC: 0.550\u003cbr\u003eTumor: STAD Tumor", "x": 160.39455986950784, "y": -228.94255884996142}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "PYY", "label": "PYY", "shape": "dot", "size": 5.5600000000000005, "title": "PYY\u003cbr\u003ePCC: 0.540\u003cbr\u003eTumor: STAD Tumor", "x": 167.79790306421708, "y": -244.34266618159182}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "STXBP1", "label": "STXBP1", "shape": "dot", "size": 5.5600000000000005, "title": "STXBP1\u003cbr\u003ePCC: 0.540\u003cbr\u003eTumor: STAD Tumor", "x": 179.68628842941968, "y": -256.7897724454614}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "VWA5B2", "label": "VWA5B2", "shape": "dot", "size": 5.28, "title": "VWA5B2\u003cbr\u003ePCC: 0.520\u003cbr\u003eTumor: STAD Tumor", "x": 194.95068946871712, "y": -265.01077666197483}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "BX842568.1", "label": "BX842568.1", "shape": "dot", "size": 5.28, "title": "BX842568.1\u003cbr\u003ePCC: 0.520\u003cbr\u003eTumor: STAD Tumor", "x": 212.1320343559642, "y": -268.13203435596427}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "FAM167A", "label": "FAM167A", "shape": "dot", "size": 5.28, "title": "FAM167A\u003cbr\u003ePCC: 0.520\u003cbr\u003eTumor: STAD Tumor", "x": 229.56059283871122, "y": -265.77162187501096}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "ABCB10", "label": "ABCB10", "shape": "dot", "size": 5.28, "title": "ABCB10\u003cbr\u003ePCC: 0.520\u003cbr\u003eTumor: STAD Tumor", "x": 245.51823668617666, "y": -258.08419963646134}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "SGOL1-AS1", "label": "SGOL1-AS1", "shape": "dot", "size": 5.140000000000001, "title": "SGOL1-AS1\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: STAD Tumor", "x": 258.4078064342112, "y": -245.75335078709378}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "BEND3", "label": "BEND3", "shape": "dot", "size": 5.140000000000001, "title": "BEND3\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: STAD Tumor", "x": 266.912889694565, "y": -229.93141323196127}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "GPR148", "label": "GPR148", "shape": "dot", "size": 5.140000000000001, "title": "GPR148\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: STAD Tumor", "x": 270.1320343559642, "y": -212.1320343559643}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "GPR119", "label": "GPR119", "shape": "dot", "size": 5.140000000000001, "title": "GPR119\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: STAD Tumor", "x": 267.67373490760116, "y": -194.08544188446737}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "GGTLC2", "label": "GGTLC2", "shape": "dot", "size": 5.140000000000001, "title": "GGTLC2\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: STAD Tumor", "x": 259.70223362521114, "y": -177.5702615211669}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "RPRML", "label": "RPRML", "shape": "dot", "size": 5.140000000000001, "title": "RPRML\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: STAD Tumor", "x": 246.92892129167865, "y": -164.2382282889674}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "PCSK1", "label": "PCSK1", "shape": "dot", "size": 5.140000000000001, "title": "PCSK1\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: STAD Tumor", "x": 230.5494472207111, "y": -155.44906598477314}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "SLC18A2", "label": "SLC18A2", "shape": "dot", "size": 5.140000000000001, "title": "SLC18A2\u003cbr\u003ePCC: 0.510\u003cbr\u003eTumor: STAD Tumor", "x": 212.13203435596424, "y": -152.1320343559643}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "FATE1", "label": "FATE1", "shape": "dot", "size": 5.0, "title": "FATE1\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: STAD Tumor", "x": 193.4674078957174, "y": -154.688220771737}, {"borderWidth": 1, "color": {"background": "#FF851B", "border": "#FF851B"}, "font": {"color": "black"}, "id": "RP11-17M24.1", "label": "RP11-17M24.1", "shape": "dot", "size": 5.0, "title": "RP11-17M24.1\u003cbr\u003ePCC: 0.500\u003cbr\u003eTumor: STAD Tumor", "x": 176.39469101658187, "y": -162.94380109796748}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "IRF1", "label": "IRF1", "shape": "diamond", "size": 11.200000000000001, "title": "IRF1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: BLCA Tumor, SARC Tumor, SKCM Tumor\u003cbr\u003eBLCA Tumor: PCC=0.540\u003cbr\u003eSARC Tumor: PCC=0.730\u003cbr\u003eSKCM Tumor: PCC=0.800", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "LAP3", "label": "LAP3", "shape": "diamond", "size": 10.36, "title": "LAP3\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: BLCA Tumor, SARC Tumor\u003cbr\u003eBLCA Tumor: PCC=0.510\u003cbr\u003eSARC Tumor: PCC=0.740", "x": -127.27922061357857, "y": -127.27922061357853}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "IFNG", "label": "IFNG", "shape": "diamond", "size": 12.18, "title": "IFNG\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: BLCA Tumor, SARC Tumor, SKCM Tumor\u003cbr\u003eBLCA Tumor: PCC=0.510\u003cbr\u003eSARC Tumor: PCC=0.600\u003cbr\u003eSKCM Tumor: PCC=0.870", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "GK", "label": "GK", "shape": "diamond", "size": 7.5600000000000005, "title": "GK\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: LIHC Tumor, OV Tumor\u003cbr\u003eLIHC Tumor: PCC=0.510\u003cbr\u003eOV Tumor: PCC=0.540", "x": -127.27922061357853, "y": 127.27922061357856}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "TMX1", "label": "TMX1", "shape": "diamond", "size": 7.700000000000001, "title": "TMX1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: OV Tumor, STAD Tumor\u003cbr\u003eOV Tumor: PCC=0.550\u003cbr\u003eSTAD Tumor: PCC=0.520", "x": -127.27922061357853, "y": 127.27922061357856}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "STAT1", "label": "STAT1", "shape": "diamond", "size": 9.799999999999999, "title": "STAT1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: OV Tumor, SARC Tumor\u003cbr\u003eOV Tumor: PCC=0.520\u003cbr\u003eSARC Tumor: PCC=0.700", "x": -127.27922061357857, "y": -127.27922061357853}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "PIK3AP1", "label": "PIK3AP1", "shape": "diamond", "size": 8.26, "title": "PIK3AP1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: OV Tumor, SARC Tumor\u003cbr\u003eOV Tumor: PCC=0.500\u003cbr\u003eSARC Tumor: PCC=0.590", "x": -127.27922061357857, "y": -127.27922061357853}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "AKAP5", "label": "AKAP5", "shape": "diamond", "size": 11.899999999999999, "title": "AKAP5\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: OV Tumor, SKCM Tumor\u003cbr\u003eOV Tumor: PCC=0.500\u003cbr\u003eSKCM Tumor: PCC=0.850", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CHGA", "label": "CHGA", "shape": "diamond", "size": 12.18, "title": "CHGA\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: PAAD Tumor, STAD Tumor\u003cbr\u003ePAAD Tumor: PCC=0.870\u003cbr\u003eSTAD Tumor: PCC=0.570", "x": -180.0, "y": 2.2043642384652355e-14}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "KCNB2", "label": "KCNB2", "shape": "diamond", "size": 11.48, "title": "KCNB2\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: PAAD Tumor, STAD Tumor\u003cbr\u003ePAAD Tumor: PCC=0.820\u003cbr\u003eSTAD Tumor: PCC=0.590", "x": -180.0, "y": 2.2043642384652355e-14}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "INSM1", "label": "INSM1", "shape": "diamond", "size": 11.34, "title": "INSM1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: PAAD Tumor, STAD Tumor\u003cbr\u003ePAAD Tumor: PCC=0.810\u003cbr\u003eSTAD Tumor: PCC=0.590", "x": -180.0, "y": 2.2043642384652355e-14}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "GBP5", "label": "GBP5", "shape": "diamond", "size": 12.600000000000001, "title": "GBP5\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.720\u003cbr\u003eSKCM Tumor: PCC=0.900", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CD38", "label": "CD38", "shape": "diamond", "size": 10.780000000000001, "title": "CD38\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.720\u003cbr\u003eSKCM Tumor: PCC=0.770", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "GBP4", "label": "GBP4", "shape": "diamond", "size": 10.780000000000001, "title": "GBP4\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.710\u003cbr\u003eSKCM Tumor: PCC=0.770", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CCR5", "label": "CCR5", "shape": "diamond", "size": 12.18, "title": "CCR5\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.710\u003cbr\u003eSKCM Tumor: PCC=0.870", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CXCR2P1", "label": "CXCR2P1", "shape": "diamond", "size": 11.34, "title": "CXCR2P1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.700\u003cbr\u003eSKCM Tumor: PCC=0.810", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "TLR8", "label": "TLR8", "shape": "diamond", "size": 10.64, "title": "TLR8\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.680\u003cbr\u003eSKCM Tumor: PCC=0.760", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CXCL10", "label": "CXCL10", "shape": "diamond", "size": 10.64, "title": "CXCL10\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.680\u003cbr\u003eSKCM Tumor: PCC=0.760", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CXCL9", "label": "CXCL9", "shape": "diamond", "size": 11.62, "title": "CXCL9\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.670\u003cbr\u003eSKCM Tumor: PCC=0.830", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "FAM26F", "label": "FAM26F", "shape": "diamond", "size": 12.600000000000001, "title": "FAM26F\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.670\u003cbr\u003eSKCM Tumor: PCC=0.900", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "IL12RB1", "label": "IL12RB1", "shape": "diamond", "size": 10.780000000000001, "title": "IL12RB1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.670\u003cbr\u003eSKCM Tumor: PCC=0.770", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "ITGAL", "label": "ITGAL", "shape": "diamond", "size": 10.780000000000001, "title": "ITGAL\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.660\u003cbr\u003eSKCM Tumor: PCC=0.770", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "GIMAP4", "label": "GIMAP4", "shape": "diamond", "size": 11.06, "title": "GIMAP4\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.660\u003cbr\u003eSKCM Tumor: PCC=0.790", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CD8A", "label": "CD8A", "shape": "diamond", "size": 12.32, "title": "CD8A\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.660\u003cbr\u003eSKCM Tumor: PCC=0.880", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CD3G", "label": "CD3G", "shape": "diamond", "size": 10.64, "title": "CD3G\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.660\u003cbr\u003eSKCM Tumor: PCC=0.760", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "SLA2", "label": "SLA2", "shape": "diamond", "size": 12.04, "title": "SLA2\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.650\u003cbr\u003eSKCM Tumor: PCC=0.860", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "TFEC", "label": "TFEC", "shape": "diamond", "size": 10.780000000000001, "title": "TFEC\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.650\u003cbr\u003eSKCM Tumor: PCC=0.770", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "GZMK", "label": "GZMK", "shape": "diamond", "size": 11.200000000000001, "title": "GZMK\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.650\u003cbr\u003eSKCM Tumor: PCC=0.800", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "IL27", "label": "IL27", "shape": "diamond", "size": 11.200000000000001, "title": "IL27\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.650\u003cbr\u003eSKCM Tumor: PCC=0.800", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CCL5", "label": "CCL5", "shape": "diamond", "size": 11.62, "title": "CCL5\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.650\u003cbr\u003eSKCM Tumor: PCC=0.830", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "SLAMF8", "label": "SLAMF8", "shape": "diamond", "size": 10.92, "title": "SLAMF8\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.640\u003cbr\u003eSKCM Tumor: PCC=0.780", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CD2", "label": "CD2", "shape": "diamond", "size": 11.899999999999999, "title": "CD2\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.640\u003cbr\u003eSKCM Tumor: PCC=0.850", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "USP30-AS1", "label": "USP30-AS1", "shape": "diamond", "size": 11.62, "title": "USP30-AS1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.640\u003cbr\u003eSKCM Tumor: PCC=0.830", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "UBASH3A", "label": "UBASH3A", "shape": "diamond", "size": 10.64, "title": "UBASH3A\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.640\u003cbr\u003eSKCM Tumor: PCC=0.760", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "AC104820.2", "label": "AC104820.2", "shape": "diamond", "size": 11.48, "title": "AC104820.2\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.640\u003cbr\u003eSKCM Tumor: PCC=0.820", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "TBX21", "label": "TBX21", "shape": "diamond", "size": 12.32, "title": "TBX21\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.630\u003cbr\u003eSKCM Tumor: PCC=0.880", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "PRF1", "label": "PRF1", "shape": "diamond", "size": 11.34, "title": "PRF1\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.630\u003cbr\u003eSKCM Tumor: PCC=0.810", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CXCR6", "label": "CXCR6", "shape": "diamond", "size": 12.18, "title": "CXCR6\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.630\u003cbr\u003eSKCM Tumor: PCC=0.870", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "THEMIS", "label": "THEMIS", "shape": "diamond", "size": 10.92, "title": "THEMIS\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.630\u003cbr\u003eSKCM Tumor: PCC=0.780", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "FTH1P22", "label": "FTH1P22", "shape": "diamond", "size": 11.76, "title": "FTH1P22\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.620\u003cbr\u003eSKCM Tumor: PCC=0.840", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "NKG7", "label": "NKG7", "shape": "diamond", "size": 11.200000000000001, "title": "NKG7\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.620\u003cbr\u003eSKCM Tumor: PCC=0.800", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "TIGIT", "label": "TIGIT", "shape": "diamond", "size": 12.04, "title": "TIGIT\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.620\u003cbr\u003eSKCM Tumor: PCC=0.860", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "GZMH", "label": "GZMH", "shape": "diamond", "size": 10.780000000000001, "title": "GZMH\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.610\u003cbr\u003eSKCM Tumor: PCC=0.770", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "SLFN12L", "label": "SLFN12L", "shape": "diamond", "size": 10.64, "title": "SLFN12L\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.600\u003cbr\u003eSKCM Tumor: PCC=0.760", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "CCL4", "label": "CCL4", "shape": "diamond", "size": 12.600000000000001, "title": "CCL4\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.600\u003cbr\u003eSKCM Tumor: PCC=0.900", "x": -3.3065463576978534e-14, "y": -180.0}, {"borderWidth": 2, "color": {"background": "#FF9800", "border": "#E65100"}, "font": {"color": "black"}, "id": "GPR171", "label": "GPR171", "shape": "diamond", "size": 11.34, "title": "GPR171\u003cbr\u003e\u8de8\u816b\u7624\u985e\u578b\u57fa\u56e0\u003cbr\u003e\u5b58\u5728\u65bc: SARC Tumor, SKCM Tumor\u003cbr\u003eSARC Tumor: PCC=0.600\u003cbr\u003eSKCM Tumor: PCC=0.810", "x": -3.3065463576978534e-14, "y": -180.0}]);
+                  edges = new vis.DataSet([{"color": "rgba(150,150,150,0.8)", "from": "GCH1", "to": "BLCA Tumor", "width": 2}, {"color": "rgba(150,150,150,0.8)", "from": "GCH1", "to": "CESC Tumor", "width": 2}, {"color": "rgba(150,150,150,0.8)", "from": "GCH1", "to": "LIHC Tumor", "width": 2}, {"color": "rgba(150,150,150,0.8)", "from": "GCH1", "to": "OV Tumor", "width": 2}, {"color": "rgba(150,150,150,0.8)", "from": "GCH1", "to": "PAAD Tumor", "width": 2}, {"color": "rgba(150,150,150,0.8)", "from": "GCH1", "to": "SARC Tumor", "width": 2}, {"color": "rgba(150,150,150,0.8)", "from": "GCH1", "to": "SKCM Tumor", "width": 2}, {"color": "rgba(150,150,150,0.8)", "from": "GCH1", "to": "STAD Tumor", "width": 2}, {"color": {"color": "#0074D9", "opacity": 0.5}, "from": "CESC Tumor", "title": "PCC: 0.540", "to": "CNGA2", "width": 0.36800000000000005}, {"color": {"color": "#0074D9", "opacity": 0.5}, "from": "CESC Tumor", "title": "PCC: 0.510", "to": "UGT2A1", "width": 0.317}, {"color": {"color": "#0074D9", "opacity": 0.5}, "from": "CESC Tumor", "title": "PCC: 0.500", "to": "RP11-401E5.2", "width": 0.3}, {"color": {"color": "#FFDC00", "opacity": 0.5}, "from": "LIHC Tumor", "title": "PCC: 0.530", "to": "LINC00602", "width": 0.35100000000000003}, {"color": {"color": "#FFDC00", "opacity": 0.5}, "from": "LIHC Tumor", "title": "PCC: 0.520", "to": "SLC16A14", "width": 0.334}, {"color": {"color": "#FFDC00", "opacity": 0.5}, "from": "LIHC Tumor", "title": "PCC: 0.510", "to": "AKAP12", "width": 0.317}, {"color": {"color": "#FFDC00", "opacity": 0.5}, "from": "LIHC Tumor", "title": "PCC: 0.500", "to": "SLC25A15", "width": 0.3}, {"color": {"color": "#FFDC00", "opacity": 0.5}, "from": "LIHC Tumor", "title": "PCC: 0.500", "to": "CCRN4L", "width": 0.3}, {"color": {"color": "#FFDC00", "opacity": 0.5}, "from": "LIHC Tumor", "title": "PCC: 0.500", "to": "SLC7A2", "width": 0.3}, {"color": {"color": "#FFDC00", "opacity": 0.5}, "from": "LIHC Tumor", "title": "PCC: 0.500", "to": "GOT1", "width": 0.3}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.580", "to": "SOCS4", "width": 0.43599999999999994}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.560", "to": "ATP6AP2", "width": 0.4020000000000001}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.550", "to": "SGPP1", "width": 0.38500000000000006}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.540", "to": "WDHD1", "width": 0.36800000000000005}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.540", "to": "EXOC5", "width": 0.36800000000000005}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.540", "to": "SRP54", "width": 0.36800000000000005}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.530", "to": "DLGAP5", "width": 0.35100000000000003}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.530", "to": "LRR1", "width": 0.35100000000000003}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.510", "to": "CARD8-AS1", "width": 0.317}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.510", "to": "PPM1A", "width": 0.317}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.510", "to": "GMFB", "width": 0.317}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.500", "to": "WARS", "width": 0.3}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.500", "to": "C9orf91", "width": 0.3}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.500", "to": "CENPI", "width": 0.3}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.500", "to": "AP5M1", "width": 0.3}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.500", "to": "NIN", "width": 0.3}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.500", "to": "SMC1A", "width": 0.3}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.500", "to": "PPP2R5E", "width": 0.3}, {"color": {"color": "#FF4081", "opacity": 0.5}, "from": "OV Tumor", "title": "PCC: 0.500", "to": "ZNF267", "width": 0.3}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.920", "to": "KCNK16", "width": 1.014}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.900", "to": "4-Mar", "width": 0.98}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.900", "to": "SLC8A2", "width": 0.98}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.890", "to": "LRRTM4", "width": 0.9630000000000001}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.890", "to": "NANOS1", "width": 0.9630000000000001}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.890", "to": "MIR7-3HG", "width": 0.9630000000000001}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.880", "to": "LINC01014", "width": 0.946}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.880", "to": "APBB1", "width": 0.946}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.880", "to": "ERO1LB", "width": 0.946}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.870", "to": "TUNAR", "width": 0.929}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.870", "to": "SV2A", "width": 0.929}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.860", "to": "DUSP26", "width": 0.9119999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.860", "to": "RP11-384O8.1", "width": 0.9119999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.860", "to": "P2RX6", "width": 0.9119999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.860", "to": "RP11-531A24.3", "width": 0.9119999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.860", "to": "GCK", "width": 0.9119999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.860", "to": "DLGAP3", "width": 0.9119999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "BAIAP3", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "RP4-547N15.3", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "LINC00643", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "SLC12A5", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "LRRN3", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "NECAB2", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "RP11-159H10.3", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "TMEM59L", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "SVOP", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.850", "to": "MAGEL2", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.840", "to": "MYO3A", "width": 0.8779999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.840", "to": "LY6H", "width": 0.8779999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.840", "to": "SYT7", "width": 0.8779999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.840", "to": "RIPPLY2", "width": 0.8779999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.840", "to": "FXYD6", "width": 0.8779999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.840", "to": "HS3ST4", "width": 0.8779999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.840", "to": "LMO1", "width": 0.8779999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.840", "to": "HMGCLL1", "width": 0.8779999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "C3orf14", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "NLRP1", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "SNCB", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "UCN3", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "RP11-220C2.1", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "SSTR3", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "SLC22A17", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "SCML2", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "SDK1", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "SYP", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "C15orf59", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "AMPH", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "RP11-350G8.5", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.830", "to": "RP11-449J10.1", "width": 0.861}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "SCG5", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "TMEM17", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "PTPRN", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "ARG2", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "TMOD1", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "PNMAL1", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "GPRASP2", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "KCNJ6", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "AC099684.1", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "AC010980.2", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "SNAP25-AS1", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "LINC00870", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "OGDHL", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "DHRS2", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.820", "to": "CNIH2", "width": 0.8439999999999999}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "CTA-796E4.4", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "MAMLD1", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "ISL1", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "RP11-433A10.3", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "REEP2", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "RP13-514E23.1", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "CELF5", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "KCNH6", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "CXorf57", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "GRM4", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "SYNGR4", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "ELOVL4", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "SEC11C", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.810", "to": "CPLX2", "width": 0.827}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "C22orf42", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "MPP2", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "PACRG", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "NAP1L5", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "RTN1", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "KCNJ11", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "HSD17B14", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "MTMR7", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "MIR670HG", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "SLC6A17", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "RP11-586D19.1", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "ASTN1", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "ASB16", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "CTB-49A3.4", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "EML6", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "FAM184A", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "TMCC2", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "FRRS1L", "width": 0.81}, {"color": {"color": "#01FF70", "opacity": 0.5}, "from": "PAAD Tumor", "title": "PCC: 0.800", "to": "RP11-465L10.10", "width": 0.81}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.710", "to": "SLAMF7", "width": 0.6569999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.690", "to": "FYB", "width": 0.6229999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.680", "to": "TAP1", "width": 0.6060000000000001}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.670", "to": "LCP2", "width": 0.589}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.670", "to": "APOBEC3H", "width": 0.589}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.660", "to": "CTSS", "width": 0.5720000000000001}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.660", "to": "GBP1P1", "width": 0.5720000000000001}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.650", "to": "CECR1", "width": 0.5549999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.650", "to": "TOMM20P2", "width": 0.5549999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.650", "to": "IL18BP", "width": 0.5549999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.640", "to": "UBD", "width": 0.538}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.640", "to": "GBP1", "width": 0.538}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.640", "to": "PYHIN1", "width": 0.538}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.640", "to": "EOMES", "width": 0.538}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.640", "to": "KMO", "width": 0.538}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.640", "to": "UBE2L6", "width": 0.538}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.630", "to": "CCL8", "width": 0.521}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.630", "to": "CLEC6A", "width": 0.521}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.630", "to": "CXCL11", "width": 0.521}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.630", "to": "CD72", "width": 0.521}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.630", "to": "SCIMP", "width": 0.521}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.630", "to": "HLA-E", "width": 0.521}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.630", "to": "PTPRC", "width": 0.521}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.630", "to": "CD96", "width": 0.521}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "EPSTI1", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "B2M", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "SNX20", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "LCK", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "LCP1", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "BIN2", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "SEMA4A", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "CD48", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.620", "to": "AD000671.6", "width": 0.504}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.610", "to": "CD3E", "width": 0.487}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.610", "to": "PSMB9", "width": 0.487}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.610", "to": "NCF1B", "width": 0.487}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.610", "to": "XCR1", "width": 0.487}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.610", "to": "TAP2", "width": 0.487}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.610", "to": "GFI1", "width": 0.487}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.610", "to": "CXCR3", "width": 0.487}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "IL2RG", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "TRAV8-4", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "P2RY10", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "PVRIG", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "NCF1", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "TRAV9-2", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "TYMP", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "SIGLEC14", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "SIT1", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "APOL6", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "TNFSF13B", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "ITGB7", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.600", "to": "HLA-A", "width": 0.47}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.590", "to": "IL32", "width": 0.45299999999999996}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.590", "to": "TRAV12-3", "width": 0.45299999999999996}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.590", "to": "RARRES3", "width": 0.45299999999999996}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.590", "to": "PIK3CD-AS1", "width": 0.45299999999999996}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.590", "to": "VNN2", "width": 0.45299999999999996}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.590", "to": "ZNF80", "width": 0.45299999999999996}, {"color": {"color": "#B10DC9", "opacity": 0.5}, "from": "SARC Tumor", "title": "PCC: 0.590", "to": "ITK", "width": 0.45299999999999996}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.880", "to": "FASLG", "width": 0.946}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.870", "to": "JAKMIP1", "width": 0.929}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.870", "to": "GZMA", "width": 0.929}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.860", "to": "IL2RB", "width": 0.9119999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.850", "to": "HAVCR2", "width": 0.895}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.850", "to": "SIRPG", "width": 0.895}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.850", "to": "CD8B", "width": 0.895}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.850", "to": "PDCD1", "width": 0.895}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.830", "to": "SAMSN1", "width": 0.861}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.830", "to": "CRTAM", "width": 0.861}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.830", "to": "ANKRD22", "width": 0.861}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.820", "to": "LAG3", "width": 0.8439999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.820", "to": "SLA", "width": 0.8439999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.820", "to": "AC133644.2", "width": 0.8439999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.820", "to": "PSTPIP2", "width": 0.8439999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.820", "to": "TRGC2", "width": 0.8439999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.820", "to": "GNGT2", "width": 0.8439999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.820", "to": "TRGV2", "width": 0.8439999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.810", "to": "ZBED2", "width": 0.827}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.810", "to": "AC017002.1", "width": 0.827}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.810", "to": "APOL3", "width": 0.827}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.810", "to": "RP11-10J5.1", "width": 0.827}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.810", "to": "KLRD1", "width": 0.827}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.800", "to": "TNFRSF9", "width": 0.81}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.800", "to": "AC092580.4", "width": 0.81}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.800", "to": "TRGV10", "width": 0.81}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.800", "to": "SH2D1A", "width": 0.81}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.790", "to": "IL10RA", "width": 0.793}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.790", "to": "FCGR1B", "width": 0.793}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.790", "to": "FCRL6", "width": 0.793}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.790", "to": "SAMD3", "width": 0.793}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.790", "to": "HMGB3P32", "width": 0.793}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.780", "to": "CTD-2547L24.3", "width": 0.776}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.780", "to": "CTSW", "width": 0.776}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.780", "to": "FCGR1A", "width": 0.776}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.780", "to": "AC069363.1", "width": 0.776}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.780", "to": "GIMAP5", "width": 0.776}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.780", "to": "AIF1", "width": 0.776}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.780", "to": "PLEK", "width": 0.776}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "TRAV19", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "GRIN3A", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "C1QA", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "CD86", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "STX11", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "RP11-109E24.1", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "TRAC", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "HCST", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "ICOS", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "STAC3", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "KLRK1", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "C1QC", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "RP11-305L7.1", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.770", "to": "CCL4L2", "width": 0.759}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "AOAH", "width": 0.742}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "LINC01146", "width": 0.742}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "RP11-202G18.1", "width": 0.742}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "RP11-652L8.4", "width": 0.742}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "CD3D", "width": 0.742}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "RP11-598F7.3", "width": 0.742}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "C1QB", "width": 0.742}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "SMCO4", "width": 0.742}, {"color": {"color": "#7FDBFF", "opacity": 0.5}, "from": "SKCM Tumor", "title": "PCC: 0.760", "to": "PSTPIP1", "width": 0.742}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.600", "to": "NEUROD1", "width": 0.47}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.590", "to": "SEZ6", "width": 0.45299999999999996}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.580", "to": "CACNG5", "width": 0.43599999999999994}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.580", "to": "KIF19", "width": 0.43599999999999994}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.580", "to": "NKX2-2", "width": 0.43599999999999994}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.580", "to": "CRYBA2", "width": 0.43599999999999994}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.580", "to": "NKX2-2-AS1", "width": 0.43599999999999994}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.570", "to": "RFX6", "width": 0.41899999999999993}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.570", "to": "TMEM196", "width": 0.41899999999999993}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.570", "to": "RP11-357K6.1", "width": 0.41899999999999993}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.560", "to": "GPR142", "width": 0.4020000000000001}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.550", "to": "FEV", "width": 0.38500000000000006}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.540", "to": "PYY", "width": 0.36800000000000005}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.540", "to": "STXBP1", "width": 0.36800000000000005}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.520", "to": "VWA5B2", "width": 0.334}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.520", "to": "BX842568.1", "width": 0.334}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.520", "to": "FAM167A", "width": 0.334}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.520", "to": "ABCB10", "width": 0.334}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.510", "to": "SGOL1-AS1", "width": 0.317}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.510", "to": "BEND3", "width": 0.317}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.510", "to": "GPR148", "width": 0.317}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.510", "to": "GPR119", "width": 0.317}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.510", "to": "GGTLC2", "width": 0.317}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.510", "to": "RPRML", "width": 0.317}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.510", "to": "PCSK1", "width": 0.317}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.510", "to": "SLC18A2", "width": 0.317}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.500", "to": "FATE1", "width": 0.3}, {"color": {"color": "#FF851B", "opacity": 0.5}, "from": "STAD Tumor", "title": "PCC: 0.500", "to": "RP11-17M24.1", "width": 0.3}, {"color": {"color": "#3D9970", "opacity": 0.6}, "from": "BLCA Tumor", "title": "BLCA Tumor - IRF1: PCC=0.540", "to": "IRF1", "width": 0.36800000000000005}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - IRF1: PCC=0.730", "to": "IRF1", "width": 0.691}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - IRF1: PCC=0.800", "to": "IRF1", "width": 0.81}, {"color": {"color": "#3D9970", "opacity": 0.6}, "from": "BLCA Tumor", "title": "BLCA Tumor - LAP3: PCC=0.510", "to": "LAP3", "width": 0.317}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - LAP3: PCC=0.740", "to": "LAP3", "width": 0.708}, {"color": {"color": "#3D9970", "opacity": 0.6}, "from": "BLCA Tumor", "title": "BLCA Tumor - IFNG: PCC=0.510", "to": "IFNG", "width": 0.317}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - IFNG: PCC=0.600", "to": "IFNG", "width": 0.47}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - IFNG: PCC=0.870", "to": "IFNG", "width": 0.929}, {"color": {"color": "#FFDC00", "opacity": 0.6}, "from": "LIHC Tumor", "title": "LIHC Tumor - GK: PCC=0.510", "to": "GK", "width": 0.317}, {"color": {"color": "#FF4081", "opacity": 0.6}, "from": "OV Tumor", "title": "OV Tumor - GK: PCC=0.540", "to": "GK", "width": 0.36800000000000005}, {"color": {"color": "#FF4081", "opacity": 0.6}, "from": "OV Tumor", "title": "OV Tumor - TMX1: PCC=0.550", "to": "TMX1", "width": 0.38500000000000006}, {"color": {"color": "#FF851B", "opacity": 0.6}, "from": "STAD Tumor", "title": "STAD Tumor - TMX1: PCC=0.520", "to": "TMX1", "width": 0.334}, {"color": {"color": "#FF4081", "opacity": 0.6}, "from": "OV Tumor", "title": "OV Tumor - STAT1: PCC=0.520", "to": "STAT1", "width": 0.334}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - STAT1: PCC=0.700", "to": "STAT1", "width": 0.6399999999999999}, {"color": {"color": "#FF4081", "opacity": 0.6}, "from": "OV Tumor", "title": "OV Tumor - PIK3AP1: PCC=0.500", "to": "PIK3AP1", "width": 0.3}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - PIK3AP1: PCC=0.590", "to": "PIK3AP1", "width": 0.45299999999999996}, {"color": {"color": "#FF4081", "opacity": 0.6}, "from": "OV Tumor", "title": "OV Tumor - AKAP5: PCC=0.500", "to": "AKAP5", "width": 0.3}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - AKAP5: PCC=0.850", "to": "AKAP5", "width": 0.895}, {"color": {"color": "#01FF70", "opacity": 0.6}, "from": "PAAD Tumor", "title": "PAAD Tumor - CHGA: PCC=0.870", "to": "CHGA", "width": 0.929}, {"color": {"color": "#FF851B", "opacity": 0.6}, "from": "STAD Tumor", "title": "STAD Tumor - CHGA: PCC=0.570", "to": "CHGA", "width": 0.41899999999999993}, {"color": {"color": "#01FF70", "opacity": 0.6}, "from": "PAAD Tumor", "title": "PAAD Tumor - KCNB2: PCC=0.820", "to": "KCNB2", "width": 0.8439999999999999}, {"color": {"color": "#FF851B", "opacity": 0.6}, "from": "STAD Tumor", "title": "STAD Tumor - KCNB2: PCC=0.590", "to": "KCNB2", "width": 0.45299999999999996}, {"color": {"color": "#01FF70", "opacity": 0.6}, "from": "PAAD Tumor", "title": "PAAD Tumor - INSM1: PCC=0.810", "to": "INSM1", "width": 0.827}, {"color": {"color": "#FF851B", "opacity": 0.6}, "from": "STAD Tumor", "title": "STAD Tumor - INSM1: PCC=0.590", "to": "INSM1", "width": 0.45299999999999996}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - GBP5: PCC=0.720", "to": "GBP5", "width": 0.6739999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - GBP5: PCC=0.900", "to": "GBP5", "width": 0.98}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CD38: PCC=0.720", "to": "CD38", "width": 0.6739999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CD38: PCC=0.770", "to": "CD38", "width": 0.759}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - GBP4: PCC=0.710", "to": "GBP4", "width": 0.6569999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - GBP4: PCC=0.770", "to": "GBP4", "width": 0.759}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CCR5: PCC=0.710", "to": "CCR5", "width": 0.6569999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CCR5: PCC=0.870", "to": "CCR5", "width": 0.929}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CXCR2P1: PCC=0.700", "to": "CXCR2P1", "width": 0.6399999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CXCR2P1: PCC=0.810", "to": "CXCR2P1", "width": 0.827}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - TLR8: PCC=0.680", "to": "TLR8", "width": 0.6060000000000001}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - TLR8: PCC=0.760", "to": "TLR8", "width": 0.742}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CXCL10: PCC=0.680", "to": "CXCL10", "width": 0.6060000000000001}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CXCL10: PCC=0.760", "to": "CXCL10", "width": 0.742}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CXCL9: PCC=0.670", "to": "CXCL9", "width": 0.589}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CXCL9: PCC=0.830", "to": "CXCL9", "width": 0.861}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - FAM26F: PCC=0.670", "to": "FAM26F", "width": 0.589}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - FAM26F: PCC=0.900", "to": "FAM26F", "width": 0.98}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - IL12RB1: PCC=0.670", "to": "IL12RB1", "width": 0.589}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - IL12RB1: PCC=0.770", "to": "IL12RB1", "width": 0.759}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - ITGAL: PCC=0.660", "to": "ITGAL", "width": 0.5720000000000001}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - ITGAL: PCC=0.770", "to": "ITGAL", "width": 0.759}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - GIMAP4: PCC=0.660", "to": "GIMAP4", "width": 0.5720000000000001}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - GIMAP4: PCC=0.790", "to": "GIMAP4", "width": 0.793}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CD8A: PCC=0.660", "to": "CD8A", "width": 0.5720000000000001}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CD8A: PCC=0.880", "to": "CD8A", "width": 0.946}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CD3G: PCC=0.660", "to": "CD3G", "width": 0.5720000000000001}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CD3G: PCC=0.760", "to": "CD3G", "width": 0.742}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - SLA2: PCC=0.650", "to": "SLA2", "width": 0.5549999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - SLA2: PCC=0.860", "to": "SLA2", "width": 0.9119999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - TFEC: PCC=0.650", "to": "TFEC", "width": 0.5549999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - TFEC: PCC=0.770", "to": "TFEC", "width": 0.759}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - GZMK: PCC=0.650", "to": "GZMK", "width": 0.5549999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - GZMK: PCC=0.800", "to": "GZMK", "width": 0.81}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - IL27: PCC=0.650", "to": "IL27", "width": 0.5549999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - IL27: PCC=0.800", "to": "IL27", "width": 0.81}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CCL5: PCC=0.650", "to": "CCL5", "width": 0.5549999999999999}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CCL5: PCC=0.830", "to": "CCL5", "width": 0.861}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - SLAMF8: PCC=0.640", "to": "SLAMF8", "width": 0.538}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - SLAMF8: PCC=0.780", "to": "SLAMF8", "width": 0.776}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CD2: PCC=0.640", "to": "CD2", "width": 0.538}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CD2: PCC=0.850", "to": "CD2", "width": 0.895}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - USP30-AS1: PCC=0.640", "to": "USP30-AS1", "width": 0.538}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - USP30-AS1: PCC=0.830", "to": "USP30-AS1", "width": 0.861}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - UBASH3A: PCC=0.640", "to": "UBASH3A", "width": 0.538}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - UBASH3A: PCC=0.760", "to": "UBASH3A", "width": 0.742}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - AC104820.2: PCC=0.640", "to": "AC104820.2", "width": 0.538}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - AC104820.2: PCC=0.820", "to": "AC104820.2", "width": 0.8439999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - TBX21: PCC=0.630", "to": "TBX21", "width": 0.521}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - TBX21: PCC=0.880", "to": "TBX21", "width": 0.946}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - PRF1: PCC=0.630", "to": "PRF1", "width": 0.521}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - PRF1: PCC=0.810", "to": "PRF1", "width": 0.827}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CXCR6: PCC=0.630", "to": "CXCR6", "width": 0.521}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CXCR6: PCC=0.870", "to": "CXCR6", "width": 0.929}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - THEMIS: PCC=0.630", "to": "THEMIS", "width": 0.521}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - THEMIS: PCC=0.780", "to": "THEMIS", "width": 0.776}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - FTH1P22: PCC=0.620", "to": "FTH1P22", "width": 0.504}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - FTH1P22: PCC=0.840", "to": "FTH1P22", "width": 0.8779999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - NKG7: PCC=0.620", "to": "NKG7", "width": 0.504}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - NKG7: PCC=0.800", "to": "NKG7", "width": 0.81}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - TIGIT: PCC=0.620", "to": "TIGIT", "width": 0.504}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - TIGIT: PCC=0.860", "to": "TIGIT", "width": 0.9119999999999999}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - GZMH: PCC=0.610", "to": "GZMH", "width": 0.487}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - GZMH: PCC=0.770", "to": "GZMH", "width": 0.759}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - SLFN12L: PCC=0.600", "to": "SLFN12L", "width": 0.47}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - SLFN12L: PCC=0.760", "to": "SLFN12L", "width": 0.742}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - CCL4: PCC=0.600", "to": "CCL4", "width": 0.47}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - CCL4: PCC=0.900", "to": "CCL4", "width": 0.98}, {"color": {"color": "#B10DC9", "opacity": 0.6}, "from": "SARC Tumor", "title": "SARC Tumor - GPR171: PCC=0.600", "to": "GPR171", "width": 0.47}, {"color": {"color": "#7FDBFF", "opacity": 0.6}, "from": "SKCM Tumor", "title": "SKCM Tumor - GPR171: PCC=0.810", "to": "GPR171", "width": 0.827}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"nodes": {"borderWidth": 1, "borderWidthSelected": 2, "opacity": 0.9, "font": {"face": "Arial", "size": 11, "strokeWidth": 1, "strokeColor": "#ffffff"}}, "edges": {"color": {"inherit": false, "opacity": 0.7}, "smooth": {"enabled": true, "type": "continuous", "roundness": 0.5}, "arrows": {"to": {"enabled": false}, "from": {"enabled": false}}}, "physics": {"enabled": true, "solver": "forceAtlas2Based", "forceAtlas2Based": {"gravitationalConstant": -100, "centralGravity": 0.1, "springLength": 150, "springConstant": 0.08, "damping": 0.3, "avoidOverlap": 0.2}, "stabilization": {"enabled": true, "iterations": 3000, "updateInterval": 25, "fit": true}}, "interaction": {"dragNodes": true, "dragView": true, "zoomView": true, "navigationButtons": false, "keyboard": {"enabled": true, "speed": {"x": 10, "y": 10, "zoom": 0.1}, "bindToWindow": true}}, "configure": {"enabled": false}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    
+</div>
+
+        <div class="legend-container">
+            <div class="legend-title">Legend</div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FF4136;"></div>
+                <span>GCH1 (Central)</span>
+            </div>
+            
+            <div class="legend-section">Cancer Types:</div>
+        
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #3D9970;"></div>
+                <span>BLCA Tumor</span>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #0074D9;"></div>
+                <span>CESC Tumor</span>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FFDC00;"></div>
+                <span>LIHC Tumor</span>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FF4081;"></div>
+                <span>OV Tumor</span>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #01FF70;"></div>
+                <span>PAAD Tumor</span>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #B10DC9;"></div>
+                <span>SARC Tumor</span>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #7FDBFF;"></div>
+                <span>SKCM Tumor</span>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FF851B;"></div>
+                <span>STAD Tumor</span>
+            </div>
+            
+            <div class="legend-info">
+                <div>Node size: PCC correlation strength</div>
+                <div>Edge width: Connection strength</div>
+                <div>Minimum correlation: 0.5</div>
+                <div>Diamond shape: Cross-tumor genes</div>
+            </div>
+            
+            <div class="legend-controls">
+                <div class="controls-title">Interactive Controls:</div>
+                <div>- Drag nodes to rearrange</div>
+                <div>- Scroll to zoom in/out</div>
+                <div>- Hover over nodes for details</div>
+                <div>- Use buttons below for layout control</div>
+            </div>
+        </div>
+        
+        <div id="physics-status" class="status-indicator active">
+            Physics: Active
+        </div>
+        
+        <div class="control-buttons">
+            <button id="cluster-btn">Cluster Nodes</button>
+            <button id="expand-btn">Expand Nodes</button>
+            <button id="reset-btn">Reset Layout</button>
+            <button id="freeze-btn">Freeze Positions</button>
+            <button id="unfreeze-btn">Unfreeze Positions</button>
+        </div>
+        
+        <div class="download-buttons">
+            <button id="download-btn">Download PNG</button>
+            <button id="download-hires-btn">Download Hi-Res PNG</button>
+        </div>
+        
+        <script>
+        // Get the network instance
+        let network = null;
+        let nodesDataset = null;
+        let edgesDataset = null;
+        let isPhysicsEnabled = true;
+        let savedPositions = {};
+        
+        // Wait for the network to be created
+        document.addEventListener('DOMContentLoaded', function() {
+            // The network object is stored in the global window object by vis.js
+            // Wait a bit for the network to initialize
+            setTimeout(function() {
+                try {
+                    // Try multiple ways to access the network in different browsers
+                    if (window.network) {
+                        network = window.network;
+                        console.log("Network object found via window.network");
+                    } else if (document.querySelector('.vis-network') && document.querySelector('.vis-network').__vis_network__) {
+                        network = document.querySelector('.vis-network').__vis_network__;
+                        console.log("Network object found via DOM element");
+                    }
+                    
+                    if (network) {
+                        // Get the nodes and edges datasets
+                        try {
+                            nodesDataset = network.body.data.nodes;
+                            edgesDataset = network.body.data.edges;
+                            
+                            // Update status indicator to match initial state
+                            updatePhysicsStatus(true);
+                            
+                            // Initialize control buttons
+                            initControlButtons();
+                        } catch (e) {
+                            console.error("Error accessing network data:", e);
+                        }
+                    } else {
+                        console.warn("Network object not found on initial attempt, will retry");
+                        // Retry after a longer delay
+                        setTimeout(initializeNetworkAccess, 2000);
+                    }
+                } catch (e) {
+                    console.error("Error during network initialization:", e);
+                    // Retry after a longer delay
+                    setTimeout(initializeNetworkAccess, 2000);
+                }
+            }, 1000);
+        });
+        
+        function initializeNetworkAccess() {
+            try {
+                // Final attempt to get network object
+                if (window.network) {
+                    network = window.network;
+                } else {
+                    // Try to find the network through the DOM
+                    const visNetworkElements = document.querySelectorAll('.vis-network');
+                    for (let i = 0; i < visNetworkElements.length; i++) {
+                        if (visNetworkElements[i].__vis_network__) {
+                            network = visNetworkElements[i].__vis_network__;
+                            break;
+                        }
+                    }
+                }
+                
+                if (network) {
+                    console.log("Network object found on retry");
+                    nodesDataset = network.body.data.nodes;
+                    edgesDataset = network.body.data.edges;
+                    
+                    // Update status indicator to match initial state
+                    updatePhysicsStatus(true);
+                    
+                    // Initialize control buttons
+                    initControlButtons();
+                } else {
+                    console.error("Could not find network object after multiple attempts");
+                    // Show error message to user
+                    showNetworkError();
+                }
+            } catch (e) {
+                console.error("Error during network retry initialization:", e);
+                showNetworkError();
+            }
+        }
+        
+        function showNetworkError() {
+            const statusEl = document.getElementById('physics-status');
+            if (statusEl) {
+                statusEl.textContent = 'Error: Network not initialized';
+                statusEl.className = 'status-indicator error';
+                statusEl.style.color = 'red';
+            }
+        }
+        
+        function initControlButtons() {
+            // Add event listeners to buttons only after network is available
+            document.getElementById('cluster-btn').addEventListener('click', clusterNodes);
+            document.getElementById('expand-btn').addEventListener('click', expandNodes);
+            document.getElementById('reset-btn').addEventListener('click', resetLayout);
+            document.getElementById('freeze-btn').addEventListener('click', freezePositions);
+            document.getElementById('unfreeze-btn').addEventListener('click', unfreezePositions);
+            
+            console.log("Control buttons initialized");
+        }
+        
+        function updatePhysicsStatus(isEnabled) {
+            const statusEl = document.getElementById('physics-status');
+            if (statusEl) {
+                if (isEnabled) {
+                    statusEl.textContent = 'Physics: Active';
+                    statusEl.className = 'status-indicator active';
+                } else {
+                    statusEl.textContent = 'Physics: Frozen';
+                    statusEl.className = 'status-indicator frozen';
+                }
+            }
+        }
+        
+        function saveCurrentNodePositions() {
+            if (!network || !nodesDataset) {
+                console.warn("Cannot save positions: network or nodes not available");
+                return;
+            }
+            
+            try {
+                const positions = network.getPositions();
+                savedPositions = positions;
+                console.log("Saved current positions", positions);
+            } catch (e) {
+                console.error("Error saving node positions:", e);
+            }
+        }
+        
+        function applyFixedPositions() {
+            if (!network || !nodesDataset) {
+                console.warn("Cannot apply fixed positions: network or nodes not available");
+                return;
+            }
+            
+            try {
+                const nodeIds = Object.keys(savedPositions);
+                
+                nodeIds.forEach(nodeId => {
+                    const pos = savedPositions[nodeId];
+                    if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
+                        nodesDataset.update({
+                            id: nodeId,
+                            x: pos.x,
+                            y: pos.y,
+                            fixed: {
+                                x: true,
+                                y: true
+                            }
+                        });
+                    }
+                });
+                
+                console.log("Applied fixed positions to nodes");
+            } catch (e) {
+                console.error("Error applying fixed positions:", e);
+            }
+        }
+        
+        function releaseFixedPositions() {
+            if (!network || !nodesDataset) {
+                console.warn("Cannot release fixed positions: network or nodes not available");
+                return;
+            }
+            
+            try {
+                const ids = nodesDataset.getIds();
+                
+                ids.forEach(id => {
+                    nodesDataset.update({
+                        id: id,
+                        fixed: {
+                            x: false,
+                            y: false
+                        }
+                    });
+                });
+                
+                console.log("Released fixed positions");
+            } catch (e) {
+                console.error("Error releasing fixed positions:", e);
+            }
+        }
+        
+        // Cluster nodes
+        function clusterNodes() {
+            if (!network) {
+                console.warn("Cannot cluster nodes: network not available");
+                return;
+            }
+            
+            try {
+                // Increase gravity to pull nodes together
+                network.physics.options.forceAtlas2Based.gravitationalConstant = -500;
+                network.physics.options.forceAtlas2Based.centralGravity = 0.4;
+                network.physics.options.forceAtlas2Based.springLength = 50;
+                network.physics.options.forceAtlas2Based.springConstant = 0.3;
+                
+                // Update physics and stabilize
+                network.setOptions({physics: network.physics.options});
+                
+                // Make sure physics is enabled
+                if (!isPhysicsEnabled) {
+                    network.setOptions({ physics: true });
+                    isPhysicsEnabled = true;
+                    updatePhysicsStatus(true);
+                    releaseFixedPositions();
+                }
+                
+                network.stabilize(100);
+            } catch (e) {
+                console.error("Error clustering nodes:", e);
+            }
+        }
+        
+        // Expand nodes
+        function expandNodes() {
+            if (!network) {
+                console.warn("Cannot expand nodes: network not available");
+                return;
+            }
+            
+            try {
+                // Decrease gravity to push nodes apart
+                network.physics.options.forceAtlas2Based.gravitationalConstant = -50;
+                network.physics.options.forceAtlas2Based.centralGravity = 0.05;
+                network.physics.options.forceAtlas2Based.springLength = 200;
+                network.physics.options.forceAtlas2Based.springConstant = 0.05;
+                
+                // Update physics and stabilize
+                network.setOptions({physics: network.physics.options});
+                
+                // Make sure physics is enabled
+                if (!isPhysicsEnabled) {
+                    network.setOptions({ physics: true });
+                    isPhysicsEnabled = true;
+                    updatePhysicsStatus(true);
+                    releaseFixedPositions();
+                }
+                
+                network.stabilize(100);
+            } catch (e) {
+                console.error("Error expanding nodes:", e);
+            }
+        }
+        
+        // Reset layout
+        function resetLayout() {
+            if (!network) {
+                console.warn("Cannot reset layout: network not available");
+                return;
+            }
+            
+            try {
+                // Reset to original physics settings
+                network.physics.options.forceAtlas2Based.gravitationalConstant = -150;
+                network.physics.options.forceAtlas2Based.centralGravity = 0.15;
+                network.physics.options.forceAtlas2Based.springLength = 100;
+                network.physics.options.forceAtlas2Based.springConstant = 0.15;
+                network.physics.options.forceAtlas2Based.damping = 0.3;
+                network.physics.options.forceAtlas2Based.avoidOverlap = 0.3;
+                
+                // Update physics and stabilize
+                network.setOptions({physics: network.physics.options});
+                
+                // Make sure physics is enabled
+                if (!isPhysicsEnabled) {
+                    network.setOptions({ physics: true });
+                    isPhysicsEnabled = true;
+                    updatePhysicsStatus(true);
+                    releaseFixedPositions();
+                }
+                
+                network.stabilize(300);
+                
+                // Reset zoom
+                network.fit();
+            } catch (e) {
+                console.error("Error resetting layout:", e);
+            }
+        }
+        
+        // Freeze node positions
+        function freezePositions() {
+            if (!network) {
+                console.warn("Cannot freeze positions: network not available");
+                return;
+            }
+            
+            try {
+                // Save current node positions before freezing
+                saveCurrentNodePositions();
+                
+                // Apply fixed positions to nodes
+                applyFixedPositions();
+                
+                // Disable physics
+                network.setOptions({ physics: false });
+                isPhysicsEnabled = false;
+                updatePhysicsStatus(false);
+            } catch (e) {
+                console.error("Error freezing positions:", e);
+            }
+        }
+        
+        // Unfreeze node positions
+        function unfreezePositions() {
+            if (!network) {
+                console.warn("Cannot unfreeze positions: network not available");
+                return;
+            }
+            
+            try {
+                // Release fixed positions
+                releaseFixedPositions();
+                
+                // Enable physics
+                network.setOptions({ physics: true });
+                isPhysicsEnabled = true;
+                updatePhysicsStatus(true);
+            } catch (e) {
+                console.error("Error unfreezing positions:", e);
+            }
+        }
+        </script>
+        
+        <script>
+        // Regular PNG download
+        document.getElementById('download-btn').addEventListener('click', function() {
+            downloadNetworkImage();
+        });
+        
+        // High-resolution PNG download
+        document.getElementById('download-hires-btn').addEventListener('click', function() {
+            downloadNetworkImage(3.0); // 3x higher resolution
+        });
+        
+        function downloadNetworkImage(scaleFactor = 1.0) {
+            // Get the entire document for capturing, including legend and title
+            const fullPage = document.querySelector('body');
+            
+            if (fullPage) {
+                // Hide the download buttons during capture
+                const downloadBtns = document.querySelector('.download-buttons');
+                const controlBtns = document.querySelector('.control-buttons');
+                const statusIndicator = document.querySelector('.status-indicator');
+                
+                if (downloadBtns) downloadBtns.style.display = 'none';
+                if (controlBtns) controlBtns.style.display = 'none';
+                if (statusIndicator) statusIndicator.style.display = 'none';
+                
+                // Use html2canvas to capture the visualization including legend and title
+                html2canvas(fullPage, {
+                    scale: scaleFactor,
+                    backgroundColor: '#f9f9f9',
+                    logging: false,
+                    allowTaint: true,
+                    useCORS: true
+                }).then(canvas => {
+                    // Create a temporary link element
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png');
+                    
+                    // Set filename based on resolution
+                    const filename = scaleFactor > 1.0 ? 'multi_tumor_network_hires.png' : 'multi_tumor_network.png';
+                    link.download = filename;
+                    
+                    // Append, click, and remove the link
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Restore visibility
+                    if (downloadBtns) downloadBtns.style.display = 'flex';
+                    if (controlBtns) controlBtns.style.display = 'flex';
+                    if (statusIndicator) statusIndicator.style.display = 'block';
+                });
+            } else {
+                alert('Could not find the visualization. Please wait until it is fully loaded.');
+            }
+        }
+        </script>
+        </body>
+</html>
